@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
+import androidx.compose.ui.focus.focusRestorer
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.material3.AssistChip
@@ -52,6 +53,7 @@ fun LibraryGridScreen(
             columns = GridCells.Adaptive(minSize = POSTER_WIDTH_DP.dp),
             horizontalArrangement = Arrangement.spacedBy(12.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp),
+            modifier = Modifier.focusRestorer(),
         ) {
             items(
                 count = items.itemCount,
