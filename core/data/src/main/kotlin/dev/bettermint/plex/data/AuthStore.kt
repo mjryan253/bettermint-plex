@@ -37,10 +37,20 @@ class AuthStore(private val context: Context) {
         }
     }
 
-    suspend fun currentAccountToken(): String? = context.dataStore.data.first()[Keys.accountToken]
+    /**
+     * In-memory copy of the account token for the HTTP client's synchronous
+     * token provider. Set whenever the token is read or written here.
+     */
+    @Volatile
+    var accountToken: String? = null
+        private set
+
+    suspend fun currentAccountToken(): String? =
+        context.dataStore.data.first()[Keys.accountToken].also { accountToken = it }
 
     suspend fun setAccountToken(token: String) {
         context.dataStore.edit { it[Keys.accountToken] = token }
+        accountToken = token
     }
 
     data class SelectedServer(
@@ -99,5 +109,6 @@ class AuthStore(private val context: Context) {
             it.remove(Keys.serverUri)
             it.remove(Keys.serverToken)
         }
+        accountToken = null
     }
 }

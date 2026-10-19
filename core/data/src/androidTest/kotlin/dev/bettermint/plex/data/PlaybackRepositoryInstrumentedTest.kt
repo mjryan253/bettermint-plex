@@ -64,8 +64,7 @@ class PlaybackRepositoryInstrumentedTest {
 
     @Test
     fun supported_file_on_local_at_original_quality_direct_plays() = runBlocking {
-        store.setSelectedServer(AuthStore.SelectedServer("m", "n", "https://s:32400", "tok", localConnection = true))
-        val repo = PlaybackRepository(api(), store)
+        val repo = PlaybackRepository(api(), store, machineId = "m", isLocal = true)
         val source = repo.source(movie("mp4", "h264", "aac", 3000), versionIndex = 0, startMs = 5000)
         assertEquals(Method.DirectPlay, source!!.method)
         assertTrue(source.url.contains("/library/parts/1/file.mp4"))
@@ -75,9 +74,8 @@ class PlaybackRepositoryInstrumentedTest {
 
     @Test
     fun local_quality_preset_forces_transcode() = runBlocking {
-        store.setSelectedServer(AuthStore.SelectedServer("m", "n", "https://s:32400", "tok", localConnection = true))
         store.setQualityPrefs(AuthStore.QualityPrefs(maxKbpsLocal = 2000, maxKbpsRemote = 0))
-        val repo = PlaybackRepository(api(), store)
+        val repo = PlaybackRepository(api(), store, machineId = "m", isLocal = true)
         // 20 Mbps file but a 2 Mbps local cap -> transcode.
         val source = repo.source(movie("mkv", "h264", "aac", 20000), versionIndex = 0, startMs = 0)
         assertEquals(Method.Transcode, source!!.method)
@@ -88,9 +86,8 @@ class PlaybackRepositoryInstrumentedTest {
 
     @Test
     fun remote_connection_uses_remote_preset() = runBlocking {
-        store.setSelectedServer(AuthStore.SelectedServer("m", "n", "https://s:32400", "tok", localConnection = false))
         store.setQualityPrefs(AuthStore.QualityPrefs(maxKbpsLocal = 0, maxKbpsRemote = 4000))
-        val repo = PlaybackRepository(api(), store)
+        val repo = PlaybackRepository(api(), store, machineId = "m", isLocal = false)
         val source = repo.source(movie("mp4", "h264", "aac", 20000), versionIndex = 0, startMs = 0)
         assertEquals(Method.Transcode, source!!.method)
         assertTrue(source.url.contains("maxVideoBitrate=4000"))
@@ -98,8 +95,7 @@ class PlaybackRepositoryInstrumentedTest {
 
     @Test
     fun unsupported_audio_direct_streams() = runBlocking {
-        store.setSelectedServer(AuthStore.SelectedServer("m", "n", "https://s:32400", "tok", localConnection = true))
-        val repo = PlaybackRepository(api(), store)
+        val repo = PlaybackRepository(api(), store, machineId = "m", isLocal = true)
         val source = repo.source(movie("mkv", "h264", "truehd", 3000), versionIndex = 0, startMs = 0)
         assertEquals(Method.DirectStream, source!!.method)
         assertTrue(source.url.contains("directStream=1"))

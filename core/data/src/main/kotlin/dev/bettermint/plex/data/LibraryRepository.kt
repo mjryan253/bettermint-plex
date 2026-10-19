@@ -16,18 +16,18 @@ class LibraryRepository(
     fun itemsPagingSource(sectionKey: String): PagingSource<Int, Metadata> =
         LibraryItemsPagingSource(api, sectionKey, titleResolver)
 
-    suspend fun hubs(): List<Hub> =
-        api.getHubs().filterNot { it.isMusic() }
-            .map { hub -> hub.copy(items = fixTitles(hub.items.filterNot { it.isMusicItem() })) }
-            .filter { it.items.isNotEmpty() }
+    suspend fun hubs(): List<Hub> = clean(api.getHubs())
 
-    suspend fun search(query: String): List<Hub> =
-        api.search(query).filterNot { it.isMusic() }
+    suspend fun search(query: String): List<Hub> = clean(api.search(query))
+
+    /** Drops music (hub-level and per item), fixes filename titles, then drops emptied hubs. */
+    private suspend fun clean(hubs: List<Hub>): List<Hub> =
+        hubs.filterNot { it.type in musicTypes }
             .map { hub -> hub.copy(items = fixTitles(hub.items.filterNot { it.isMusicItem() })) }
             .filter { it.items.isNotEmpty() }
 
     suspend fun details(ratingKey: String): Metadata? {
-        val item = api.getMetadata(ratingKey, includeExtras = true)
+        val item = api.getMetadata(ratingKey)
         return titleResolver?.resolve(item) ?: item
     }
 
@@ -49,9 +49,6 @@ class LibraryRepository(
     companion object {
         /** Music is out of scope (Plexamp covers it); hide its hubs by default. */
         private val musicTypes = setOf("artist", "album", "track")
-
-        private fun Hub.isMusic(): Boolean =
-            type in musicTypes || (items.isNotEmpty() && items.all { it.isMusicItem() })
 
         /** Music tracks/albums/artists and audio playlists are out of scope. */
         private fun Metadata.isMusicItem(): Boolean =

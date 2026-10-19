@@ -45,7 +45,6 @@ class SessionViewModel(private val graph: AppGraph) : ViewModel() {
             startSignIn()
             return
         }
-        graph.accountToken = token
         val cached = graph.serverRepository.cachedServer()
         if (cached != null && runCatching { loadReady(cached) }.isSuccess) return
         loadServerPicker()
@@ -65,7 +64,6 @@ class SessionViewModel(private val graph: AppGraph) : ViewModel() {
                     val token = polled.authToken
                     if (!token.isNullOrBlank()) {
                         graph.authStore.setAccountToken(token)
-                        graph.accountToken = token
                         loadServerPicker()
                         return@launch
                     }
@@ -111,7 +109,12 @@ class SessionViewModel(private val graph: AppGraph) : ViewModel() {
             machineId = selected?.machineId ?: "",
             titleResolver = graph.titleResolver,
         )
-        graph.playback = PlaybackRepository(api, graph.authStore)
+        graph.playback = PlaybackRepository(
+            api,
+            graph.authStore,
+            machineId = selected?.machineId ?: "",
+            isLocal = selected?.localConnection != false,
+        )
         val libraries = api.getLibrarySections()
         val users = runCatching { graph.plexTv.getHomeUsers().users }.getOrDefault(emptyList())
         _state.value = SessionState.Ready(selected?.name ?: "Plex Server", libraries, users)
@@ -124,7 +127,6 @@ class SessionViewModel(private val graph: AppGraph) : ViewModel() {
             try {
                 val switched = graph.plexTv.switchHomeUser(user.uuid, pin)
                 graph.authStore.setAccountToken(switched.authToken)
-                graph.accountToken = switched.authToken
                 // Server access tokens are per-user: rediscover and reconnect.
                 val machineId = graph.authStore.selectedServer()?.machineId
                 val server = graph.serverRepository.listServers()

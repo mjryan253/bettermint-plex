@@ -11,19 +11,22 @@ import java.util.UUID
 /**
  * Chooses how to play an item (direct play, direct stream, transcode) and
  * builds the stream URL. Also owns the fallback chain used when a method
- * fails at runtime: DirectPlay -> DirectStream -> Transcode.
+ * fails at runtime: DirectPlay -> DirectStream -> Transcode. [machineId] and
+ * [isLocal] describe the connected server; quality presets are read live
+ * from [authStore] because Settings can change them mid-session.
  */
 class PlaybackRepository(
     private val api: ServerApi,
     private val authStore: AuthStore,
-    private val caps: PlaybackDecider.DeviceCapabilities = PlaybackDecider.DeviceCapabilities.fireTv,
+    private val machineId: String,
+    private val isLocal: Boolean,
 ) {
 
     data class Source(
         val url: String,
         val method: Method,
         val sessionId: String?,
-        /** Position the PLAYER must seek to; 0 when the server already offsets. */
+        /** Resume position the player seeks to (HLS playlists are full-length, so this holds for every method). */
         val seekToMs: Long,
     )
 
@@ -42,14 +45,21 @@ class PlaybackRepository(
         overrideMaxKbps: Int? = null,
         forceMethod: Method? = null,
     ): Source? {
-        val version = item.media.getOrNull(versionIndex) ?: item.media.firstOrNull() ?: return null
+        if (item.media.isEmpty()) return null
+        // One index for both the decision and the stream URL, so they can't disagree.
+        val mediaIndex = versionIndex.coerceIn(0, item.media.lastIndex)
+        val version = item.media[mediaIndex]
         val ratingKey = item.ratingKey ?: return null
 
         val quality = authStore.qualityPrefs()
-        val local = authStore.selectedServer()?.localConnection != false
-        val cap = resolveCap(overrideMaxKbps, quality.maxKbpsLocal, quality.maxKbpsRemote, local)
+        val cap = resolveCap(overrideMaxKbps, quality.maxKbpsLocal, quality.maxKbpsRemote, isLocal)
 
-        val method = forceMethod ?: PlaybackDecider.decide(version, caps, cap, tracks.burnSubtitles)
+        val method = forceMethod ?: PlaybackDecider.decide(
+            version,
+            PlaybackDecider.DeviceCapabilities.fireTv,
+            cap,
+            tracks.burnSubtitles,
+        )
 
         return when (method) {
             Method.DirectPlay -> {
@@ -61,7 +71,7 @@ class PlaybackRepository(
                 val url = api.hlsStartUrl(
                     ratingKey = ratingKey,
                     sessionId = sessionId,
-                    mediaIndex = versionIndex.coerceAtMost(item.media.lastIndex).coerceAtLeast(0),
+                    mediaIndex = mediaIndex,
                     directStream = method == Method.DirectStream,
                     maxVideoBitrateKbps = cap,
                     audioStreamId = tracks.audioStreamId,
@@ -90,10 +100,8 @@ class PlaybackRepository(
     suspend fun markWatched(ratingKey: String) = api.scrobble(ratingKey)
 
     /** Continuous play queue for autoplay-next, or null if unavailable. */
-    suspend fun playQueue(ratingKey: String): List<Metadata> {
-        val machineId = authStore.selectedServer()?.machineId ?: return emptyList()
-        return runCatching { api.createPlayQueue(machineId, ratingKey).items }.getOrDefault(emptyList())
-    }
+    suspend fun playQueue(ratingKey: String): List<Metadata> =
+        runCatching { api.createPlayQueue(machineId, ratingKey) }.getOrDefault(emptyList())
 
     companion object {
         /** The item that follows [afterRatingKey] in the queue, or null at the end. */
@@ -133,14 +141,12 @@ class PlaybackRepository(
             return (overrideKbps ?: prefCap).takeIf { it > 0 }
         }
 
-        /** Subtitle formats Media3 renders during direct play; others burn in. */
-        private val renderableSubtitles = setOf("srt", "subrip", "ass", "ssa", "vtt", "webvtt", "pgs", "hdmv_pgs_subtitle", "mov_text", "tx3g")
+        /** Subtitle formats Media3 renders during direct play; others (incl. ASS/SSA) burn in. */
+        private val renderableSubtitles = setOf("srt", "subrip", "vtt", "webvtt", "pgs", "hdmv_pgs_subtitle", "mov_text", "tx3g")
 
         fun needsBurn(subtitle: MediaStream?): Boolean {
             if (subtitle == null) return false
             val codec = subtitle.codec?.lowercase() ?: return true
-            // ASS/SSA render only once ass-media is integrated; burn for now.
-            if (codec in setOf("ass", "ssa")) return true
             return codec !in renderableSubtitles
         }
     }

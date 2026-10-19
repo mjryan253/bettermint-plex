@@ -1,25 +1,22 @@
 package dev.bettermint.plex.api
 
 import dev.bettermint.plex.api.model.Hub
-import dev.bettermint.plex.api.model.HubsResponse
+import dev.bettermint.plex.api.model.HubsContainer
 import dev.bettermint.plex.api.model.Identity
-import dev.bettermint.plex.api.model.IdentityResponse
 import dev.bettermint.plex.api.model.LibrarySection
+import dev.bettermint.plex.api.model.MediaContainer
 import dev.bettermint.plex.api.model.Metadata
 import dev.bettermint.plex.api.model.MetadataContainer
-import dev.bettermint.plex.api.model.MetadataResponse
-import dev.bettermint.plex.api.model.PlayQueue
-import dev.bettermint.plex.api.model.PlayQueueResponse
-import dev.bettermint.plex.api.model.SectionsResponse
+import dev.bettermint.plex.api.model.SectionsContainer
 import io.ktor.client.HttpClient
 import io.ktor.client.request.HttpRequestBuilder
 import io.ktor.client.request.get
 import io.ktor.client.request.header
 import io.ktor.client.request.parameter
-import io.ktor.client.request.post
-import io.ktor.client.request.put
+import io.ktor.client.request.request
+import io.ktor.http.HttpMethod
 import io.ktor.http.encodeURLQueryComponent
-import io.ktor.http.isSuccess
+import kotlinx.coroutines.CancellationException
 
 /**
  * Plex Media Server endpoints. [baseUrl] is the chosen connection URI,
@@ -30,15 +27,20 @@ class ServerApi(
     private val client: HttpClient,
     private val baseUrl: String,
     private val accessToken: String?,
-    private val deviceInfo: PlexDeviceInfo? = null,
+    deviceInfo: PlexDeviceInfo? = null,
 ) {
+
+    /** Identity and token as query params, built once: players and image loaders bypass our client. */
+    private val identityQuery: String =
+        deviceInfo?.headers?.joinToString("") { (name, value) -> "&$name=${value.encodeURLQueryComponent()}" }.orEmpty()
+    private val tokenQuery: String = accessToken?.let { "&X-Plex-Token=$it" }.orEmpty()
 
     /** Unauthenticated; used to probe connection candidates. */
     suspend fun getIdentity(): Identity =
-        client.get("$baseUrl/identity").bodyOrThrow<IdentityResponse>().mediaContainer
+        client.get("$baseUrl/identity").bodyOrThrow<MediaContainer<Identity>>().container
 
     suspend fun getLibrarySections(): List<LibrarySection> =
-        get("$baseUrl/library/sections").bodyOrThrow<SectionsResponse>().mediaContainer.directories
+        request("/library/sections").bodyOrThrow<MediaContainer<SectionsContainer>>().container.directories
 
     /** One page of a section's items. [sort] is a Plex sort key like "titleSort:asc". */
     suspend fun getLibraryItems(
@@ -47,93 +49,69 @@ class ServerApi(
         size: Int,
         sort: String? = null,
     ): MetadataContainer =
-        get("$baseUrl/library/sections/$sectionKey/all") {
+        request("/library/sections/$sectionKey/all") {
             sort?.let { parameter("sort", it) }
             header("X-Plex-Container-Start", start.toString())
             header("X-Plex-Container-Size", size.toString())
-        }.bodyOrThrow<MetadataResponse>().mediaContainer
+        }.bodyOrThrow<MediaContainer<MetadataContainer>>().container
 
     /** Home hubs (Continue Watching, Recently Added, ...). */
-    suspend fun getHubs(count: Int = 12): List<Hub> =
-        get("$baseUrl/hubs") {
-            parameter("count", count.toString())
-        }.bodyOrThrow<HubsResponse>().mediaContainer.hubs
+    suspend fun getHubs(): List<Hub> = hubs("/hubs") { parameter("count", "12") }
 
-    suspend fun search(query: String, limit: Int = 30): List<Hub> =
-        get("$baseUrl/hubs/search") {
-            parameter("query", query)
-            parameter("limit", limit.toString())
-        }.bodyOrThrow<HubsResponse>().mediaContainer.hubs
+    suspend fun search(query: String): List<Hub> = hubs("/hubs/search") {
+        parameter("query", query)
+        parameter("limit", "30")
+    }
 
-    /** Full detail for one item; [includeExtras] nests trailers/extras in the result. */
-    suspend fun getMetadata(ratingKey: String, includeExtras: Boolean = false): Metadata? =
-        get("$baseUrl/library/metadata/$ratingKey") {
-            if (includeExtras) parameter("includeExtras", "1")
+    /** Full detail for one item, with trailers/extras, chapters and intro/credit markers. */
+    suspend fun getMetadata(ratingKey: String): Metadata? =
+        items("/library/metadata/$ratingKey") {
+            parameter("includeExtras", "1")
             parameter("includeChapters", "1")
             parameter("includeMarkers", "1")
-        }.bodyOrThrow<MetadataResponse>().mediaContainer.items.firstOrNull()
+        }.firstOrNull()
 
     /** Seasons of a show, or episodes of a season. */
     suspend fun getChildren(ratingKey: String): List<Metadata> =
-        get("$baseUrl/library/metadata/$ratingKey/children")
-            .bodyOrThrow<MetadataResponse>().mediaContainer.items
+        items("/library/metadata/$ratingKey/children")
 
     /**
-     * Build a server play queue for continuous playback. For an episode with
-     * [continuous], the queue includes the following episodes, which powers
-     * autoplay-next. Returns the ordered items, each with a playQueueItemID.
+     * Build a continuous server play queue: for an episode, the queue includes
+     * the following episodes, which powers autoplay-next. Returns the ordered
+     * items, each with a playQueueItemID.
      */
-    suspend fun createPlayQueue(
-        machineId: String,
-        ratingKey: String,
-        continuous: Boolean = true,
-    ): PlayQueue {
-        val uri = "server://$machineId/com.plexapp.plugins.library/library/metadata/$ratingKey"
-        return client.post("$baseUrl/playQueues") {
-            accessToken?.let { header("X-Plex-Token", it) }
+    suspend fun createPlayQueue(machineId: String, ratingKey: String): List<Metadata> =
+        items("/playQueues", HttpMethod.Post) {
             parameter("type", "video")
-            parameter("uri", uri)
+            parameter("uri", libraryUri(machineId, ratingKey))
             parameter("own", "1")
-            if (continuous) parameter("continuous", "1")
-        }.bodyOrThrow<PlayQueueResponse>().mediaContainer
-    }
+            parameter("continuous", "1")
+        }
 
     suspend fun getCollections(sectionKey: String): List<Metadata> =
-        get("$baseUrl/library/sections/$sectionKey/collections")
-            .bodyOrThrow<MetadataResponse>().mediaContainer.items
+        items("/library/sections/$sectionKey/collections")
 
     suspend fun getCollectionChildren(ratingKey: String): List<Metadata> =
-        get("$baseUrl/library/collections/$ratingKey/children")
-            .bodyOrThrow<MetadataResponse>().mediaContainer.items
+        items("/library/collections/$ratingKey/children")
 
     suspend fun getPlaylists(): List<Metadata> =
-        get("$baseUrl/playlists") {
-            parameter("playlistType", "video")
-        }.bodyOrThrow<MetadataResponse>().mediaContainer.items
+        items("/playlists") { parameter("playlistType", "video") }
 
     suspend fun getPlaylistItems(ratingKey: String): List<Metadata> =
-        get("$baseUrl/playlists/$ratingKey/items")
-            .bodyOrThrow<MetadataResponse>().mediaContainer.items
+        items("/playlists/$ratingKey/items")
 
     suspend fun addToPlaylist(playlistRatingKey: String, machineId: String, itemRatingKey: String) {
-        val uri = "server://$machineId/com.plexapp.plugins.library/library/metadata/$itemRatingKey"
-        val response = client.put("$baseUrl/playlists/$playlistRatingKey/items") {
-            accessToken?.let { header("X-Plex-Token", it) }
-            parameter("uri", uri)
-        }
-        if (!response.status.isSuccess()) {
-            throw PlexApiException(response.status.value, response.bodyAsTextSafe())
-        }
+        request("/playlists/$playlistRatingKey/items", HttpMethod.Put) {
+            parameter("uri", libraryUri(machineId, itemRatingKey))
+        }.ensureSuccess()
     }
 
     /**
      * Direct-play stream URL for a media part. The token rides as a query
      * parameter because the player's data source bypasses our client.
      */
-    fun directPlayUrl(partKey: String): String {
-        val token = accessToken?.let { "?X-Plex-Token=$it" } ?: ""
-        return "$baseUrl$partKey$token"
-    }
+    fun directPlayUrl(partKey: String): String =
+        if (accessToken == null) "$baseUrl$partKey" else "$baseUrl$partKey?X-Plex-Token=$accessToken"
 
     /**
      * HLS stream URL for direct-stream or full transcode. Built from scratch
@@ -145,7 +123,6 @@ class ServerApi(
         ratingKey: String,
         sessionId: String,
         mediaIndex: Int = 0,
-        partIndex: Int = 0,
         directStream: Boolean = true,
         maxVideoBitrateKbps: Int? = null,
         audioStreamId: Long? = null,
@@ -156,7 +133,7 @@ class ServerApi(
         append("?hasMDE=1")
         append("&path=").append("/library/metadata/$ratingKey".encodeURLQueryComponent(encodeFull = true))
         append("&mediaIndex=$mediaIndex")
-        append("&partIndex=$partIndex")
+        append("&partIndex=0")
         append("&protocol=hls")
         append("&fastSeek=1")
         append("&directPlay=0")
@@ -166,16 +143,8 @@ class ServerApi(
         audioStreamId?.let { append("&audioStreamID=$it") }
         subtitleStreamId?.let { append("&subtitleStreamID=$it") }
         if (burnSubtitles) append("&subtitles=burn")
-        deviceInfo?.let {
-            append("&X-Plex-Product=").append(it.product.encodeURLQueryComponent())
-            append("&X-Plex-Version=").append(it.version.encodeURLQueryComponent())
-            append("&X-Plex-Client-Identifier=").append(it.clientIdentifier.encodeURLQueryComponent())
-            append("&X-Plex-Platform=").append(it.platform.encodeURLQueryComponent())
-            append("&X-Plex-Platform-Version=").append(it.platformVersion.encodeURLQueryComponent())
-            append("&X-Plex-Device=").append(it.device.encodeURLQueryComponent())
-            append("&X-Plex-Device-Name=").append(it.deviceName.encodeURLQueryComponent())
-        }
-        accessToken?.let { append("&X-Plex-Token=$it") }
+        append(identityQuery)
+        append(tokenQuery)
     }
 
     /**
@@ -189,51 +158,64 @@ class ServerApi(
         timeMs: Long,
         durationMs: Long,
         playQueueItemId: Long? = null,
-    ) {
-        runCatching {
-            get("$baseUrl/:/timeline") {
-                parameter("ratingKey", ratingKey)
-                parameter("key", "/library/metadata/$ratingKey")
-                parameter("state", state)
-                parameter("time", timeMs.toString())
-                parameter("duration", durationMs.toString())
-                parameter("hasMDE", "1")
-                playQueueItemId?.let { parameter("playQueueItemID", it.toString()) }
-            }
-        }
+    ) = fireAndForget("/:/timeline") {
+        parameter("ratingKey", ratingKey)
+        parameter("key", "/library/metadata/$ratingKey")
+        parameter("state", state)
+        parameter("time", timeMs.toString())
+        parameter("duration", durationMs.toString())
+        parameter("hasMDE", "1")
+        playQueueItemId?.let { parameter("playQueueItemID", it.toString()) }
     }
 
-    suspend fun scrobble(ratingKey: String) {
-        runCatching {
-            get("$baseUrl/:/scrobble") {
-                parameter("key", ratingKey)
-                parameter("identifier", "com.plexapp.plugins.library")
-            }
-        }
+    suspend fun scrobble(ratingKey: String) = fireAndForget("/:/scrobble") {
+        parameter("key", ratingKey)
+        parameter("identifier", "com.plexapp.plugins.library")
     }
 
     /** Tear down a transcode session when playback stops or restarts. */
-    suspend fun stopTranscode(sessionId: String) {
-        runCatching {
-            get("$baseUrl/video/:/transcode/universal/stop") {
-                parameter("session", sessionId)
-            }
-        }
+    suspend fun stopTranscode(sessionId: String) = fireAndForget("/video/:/transcode/universal/stop") {
+        parameter("session", sessionId)
     }
 
     /**
      * Server-side resized artwork URL for direct use by an image loader. The
      * token rides as a query parameter because the loader bypasses our client.
      */
-    fun imageUrl(path: String, width: Int, height: Int): String {
-        val encoded = path.encodeURLQueryComponent(encodeFull = true)
-        val token = accessToken?.let { "&X-Plex-Token=$it" } ?: ""
-        return "$baseUrl/photo/:/transcode?width=$width&height=$height&minSize=1&upscale=1&url=$encoded$token"
+    fun imageUrl(path: String, width: Int, height: Int): String =
+        "$baseUrl/photo/:/transcode?width=$width&height=$height&minSize=1&upscale=1&url=" +
+            path.encodeURLQueryComponent(encodeFull = true) + tokenQuery
+
+    private fun libraryUri(machineId: String, ratingKey: String) =
+        "server://$machineId/com.plexapp.plugins.library/library/metadata/$ratingKey"
+
+    private suspend fun request(
+        path: String,
+        method: HttpMethod = HttpMethod.Get,
+        block: HttpRequestBuilder.() -> Unit = {},
+    ) = client.request("$baseUrl$path") {
+        this.method = method
+        accessToken?.let { header("X-Plex-Token", it) }
+        block()
     }
 
-    private suspend fun get(url: String, block: HttpRequestBuilder.() -> Unit = {}) =
-        client.get(url) {
-            accessToken?.let { header("X-Plex-Token", it) }
-            block()
+    private suspend fun items(
+        path: String,
+        method: HttpMethod = HttpMethod.Get,
+        block: HttpRequestBuilder.() -> Unit = {},
+    ): List<Metadata> =
+        request(path, method, block).bodyOrThrow<MediaContainer<MetadataContainer>>().container.items
+
+    private suspend fun hubs(path: String, block: HttpRequestBuilder.() -> Unit): List<Hub> =
+        request(path, block = block).bodyOrThrow<MediaContainer<HubsContainer>>().container.hubs
+
+    /** Swallows server and network errors, but never coroutine cancellation. */
+    private suspend fun fireAndForget(path: String, block: HttpRequestBuilder.() -> Unit) {
+        try {
+            request(path, block = block)
+        } catch (e: CancellationException) {
+            throw e
+        } catch (_: Exception) {
         }
+    }
 }

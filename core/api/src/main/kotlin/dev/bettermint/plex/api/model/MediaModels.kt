@@ -10,7 +10,6 @@ import kotlinx.serialization.Serializable
 @Serializable
 data class Metadata(
     val ratingKey: String? = null,
-    val key: String? = null,
     val guid: String? = null,
     val type: String? = null,
     val title: String = "",
@@ -26,21 +25,17 @@ data class Metadata(
     val viewedLeafCount: Int? = null,
     val childCount: Int? = null,
     val addedAt: Long? = null,
-    val originallyAvailableAt: String? = null,
     val contentRating: String? = null,
     val rating: Double? = null,
     val audienceRating: Double? = null,
-    val parentRatingKey: String? = null,
     val parentIndex: Int? = null,
     val parentTitle: String? = null,
     val parentThumb: String? = null,
-    val grandparentRatingKey: String? = null,
     val grandparentTitle: String? = null,
     val grandparentThumb: String? = null,
     val playlistType: String? = null,
-    val smart: Boolean? = null,
     val playQueueItemID: Long? = null,
-    @SerialName("Extras") val extras: ExtrasContainer? = null,
+    @SerialName("Extras") val extras: MetadataContainer? = null,
     @SerialName("Media") val media: List<MediaVersion> = emptyList(),
     @SerialName("Chapter") val chapters: List<Chapter> = emptyList(),
     @SerialName("Marker") val markers: List<Marker> = emptyList(),
@@ -49,7 +44,6 @@ data class Metadata(
 /** Plex Pass intro/credit markers; type is "intro" or "credits". */
 @Serializable
 data class Marker(
-    val id: Long? = null,
     val type: String? = null,
     val startTimeOffset: Long? = null,
     val endTimeOffset: Long? = null,
@@ -58,15 +52,10 @@ data class Marker(
 /** One playable version of an item (e.g. the 4K file vs the 1080p file). */
 @Serializable
 data class MediaVersion(
-    val id: Long? = null,
-    val duration: Long? = null,
     val bitrate: Int? = null,
-    val width: Int? = null,
-    val height: Int? = null,
     val videoResolution: String? = null,
     val videoCodec: String? = null,
     val audioCodec: String? = null,
-    val audioChannels: Int? = null,
     val container: String? = null,
     @SerialName("Part") val parts: List<MediaPart> = emptyList(),
 ) {
@@ -81,12 +70,7 @@ data class MediaVersion(
 
 @Serializable
 data class MediaPart(
-    val id: Long? = null,
     val key: String? = null,
-    val duration: Long? = null,
-    val size: Long? = null,
-    val container: String? = null,
-    val file: String? = null,
     @SerialName("Stream") val streams: List<MediaStream> = emptyList(),
 )
 
@@ -96,18 +80,14 @@ data class MediaStream(
     val id: Long,
     val streamType: Int,
     val codec: String? = null,
-    val index: Int? = null,
     val language: String? = null,
     val languageTag: String? = null,
     val displayTitle: String? = null,
     val extendedDisplayTitle: String? = null,
     val title: String? = null,
     val selected: Boolean = false,
-    val default: Boolean = false,
-    val forced: Boolean = false,
     /** External subtitle sidecar key (e.g. /library/streams/123), null when embedded. */
     val key: String? = null,
-    val channels: Int? = null,
 ) {
     val isAudio: Boolean get() = streamType == 2
     val isSubtitle: Boolean get() = streamType == 3
@@ -120,39 +100,23 @@ data class Chapter(
     val index: Int? = null,
     val tag: String? = null,
     val startTimeOffset: Long? = null,
-    val endTimeOffset: Long? = null,
     val thumb: String? = null,
 )
 
-@Serializable
-data class ExtrasContainer(
-    val size: Int = 0,
-    @SerialName("Metadata") val items: List<Metadata> = emptyList(),
-)
-
-/** Paged listing: /library/sections/{key}/all, /children, /items, /collections, /playlists. */
-@Serializable
-data class MetadataResponse(
-    @SerialName("MediaContainer") val mediaContainer: MetadataContainer,
-)
-
+/**
+ * Any list of items: paged section listings, children, collections, playlists,
+ * play queues, and the Extras block nested in a detail response.
+ */
 @Serializable
 data class MetadataContainer(
     val size: Int = 0,
     val totalSize: Int? = null,
-    val offset: Int? = null,
     @SerialName("Metadata") val items: List<Metadata> = emptyList(),
 )
 
 /** Hub listings: /hubs, /hubs/search. */
 @Serializable
-data class HubsResponse(
-    @SerialName("MediaContainer") val mediaContainer: HubsContainer,
-)
-
-@Serializable
 data class HubsContainer(
-    val size: Int = 0,
     @SerialName("Hub") val hubs: List<Hub> = emptyList(),
 )
 
@@ -161,21 +125,5 @@ data class Hub(
     val title: String = "",
     val type: String? = null,
     val hubIdentifier: String? = null,
-    val size: Int = 0,
-    val more: Boolean = false,
-    @SerialName("Metadata") val items: List<Metadata> = emptyList(),
-)
-
-/** POST /playQueues result: the ordered items for continuous/autoplay. */
-@Serializable
-data class PlayQueueResponse(
-    @SerialName("MediaContainer") val mediaContainer: PlayQueue,
-)
-
-@Serializable
-data class PlayQueue(
-    val playQueueID: Long? = null,
-    val playQueueSelectedItemID: Long? = null,
-    val size: Int = 0,
     @SerialName("Metadata") val items: List<Metadata> = emptyList(),
 )

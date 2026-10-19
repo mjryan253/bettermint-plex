@@ -3,7 +3,6 @@ package dev.bettermint.plex.api
 import io.ktor.client.engine.mock.respond
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
-import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -29,11 +28,10 @@ class MediaStreamTest {
     }
 
     @Test
-    fun `audio stream carries language channels and selected flag`() = runTest {
+    fun `audio stream carries language and selected flag`() = runTest {
         val audio = detail().media.first().parts.first().streams.first { it.isAudio && it.selected }
         assertEquals("English", audio.language)
         assertEquals("en", audio.languageTag)
-        assertEquals(6, audio.channels)
         assertEquals("English (DTS 5.1)", audio.label)
     }
 
@@ -44,7 +42,6 @@ class MediaStreamTest {
         val embedded = subs.first { it.codec == "ass" }
         assertEquals("/library/streams/804", external.key)
         assertNull(embedded.key)
-        assertFalse(embedded.forced)
     }
 
     @Test

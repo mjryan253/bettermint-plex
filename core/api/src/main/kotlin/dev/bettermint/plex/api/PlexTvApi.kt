@@ -1,13 +1,13 @@
 package dev.bettermint.plex.api
 
 import dev.bettermint.plex.api.model.HomeUsers
+import dev.bettermint.plex.api.model.MediaContainer
 import dev.bettermint.plex.api.model.Metadata
-import dev.bettermint.plex.api.model.MetadataResponse
+import dev.bettermint.plex.api.model.MetadataContainer
 import dev.bettermint.plex.api.model.Pin
 import dev.bettermint.plex.api.model.PlexResource
 import dev.bettermint.plex.api.model.SwitchUserResponse
 import io.ktor.client.HttpClient
-import io.ktor.client.call.body
 import io.ktor.client.request.get
 import io.ktor.client.request.parameter
 import io.ktor.client.request.post
@@ -16,11 +16,10 @@ import io.ktor.client.statement.bodyAsText
 import io.ktor.http.isSuccess
 
 /** plex.tv account endpoints (PIN auth, resources, Plex Home). */
-class PlexTvApi(
-    private val client: HttpClient,
-    private val baseUrl: String = "https://plex.tv",
-    private val providerBaseUrl: String = "https://metadata.provider.plex.tv",
-) {
+class PlexTvApi(private val client: HttpClient) {
+
+    private val baseUrl = "https://plex.tv"
+    private val providerBaseUrl = "https://metadata.provider.plex.tv"
 
     /**
      * Start the link flow. Non-strong pins return the short 4-character code the
@@ -59,13 +58,18 @@ class PlexTvApi(
         val id = plexGuid.substringAfter("plex://", "").substringAfterLast('/')
         if (id.isBlank()) return null
         return client.get("$providerBaseUrl/library/metadata/$id")
-            .bodyOrThrow<MetadataResponse>().mediaContainer.items.firstOrNull()
+            .bodyOrThrow<MediaContainer<MetadataContainer>>().container.items.firstOrNull()
     }
 }
 
-internal suspend inline fun <reified T> HttpResponse.bodyOrThrow(): T {
+internal suspend fun HttpResponse.ensureSuccess() {
     if (!status.isSuccess()) throw PlexApiException(status.value, bodyAsTextSafe())
-    return body()
+}
+
+/** Decodes the JSON body; every Plex response is JSON because of the Accept header. */
+internal suspend inline fun <reified T> HttpResponse.bodyOrThrow(): T {
+    ensureSuccess()
+    return PlexClient.json.decodeFromString<T>(bodyAsText())
 }
 
 internal suspend fun HttpResponse.bodyAsTextSafe(): String =

@@ -10,7 +10,7 @@ import org.junit.Test
 class ConnectionSelectorTest {
 
     private fun conn(uri: String, local: Boolean = false, relay: Boolean = false) =
-        PlexConnection(protocol = "https", address = "x", port = 32400, uri = uri, local = local, relay = relay)
+        PlexConnection(uri = uri, local = local, relay = relay)
 
     private val local = conn("https://local:32400", local = true)
     private val remote = conn("https://remote:32400")

@@ -30,7 +30,6 @@ class ServerApiMediaTest {
         assertEquals("2", sizeHeader)
         assertEquals("titleSort:asc", sortParam)
         assertEquals(1234, page.totalSize)
-        assertEquals(40, page.offset)
         assertEquals(2, page.items.size)
         assertEquals("Example Movie", page.items.first().title)
         assertEquals(1200000L, page.items[1].viewOffset)
@@ -53,7 +52,6 @@ class ServerApiMediaTest {
         assertEquals("episode", episode.type)
         assertEquals("Example Show", episode.grandparentTitle)
         assertEquals(900000L, episode.viewOffset)
-        assertTrue(hubs[1].more)
     }
 
     @Test
@@ -82,7 +80,7 @@ class ServerApiMediaTest {
             "https://server.example:32400",
             accessToken = null,
         )
-        val detail = api.getMetadata("101", includeExtras = true)
+        val detail = api.getMetadata("101")
 
         assertEquals("1", includeExtras)
         assertEquals("Example Movie", detail?.title)
@@ -170,7 +168,7 @@ class ServerApiMediaTest {
             "https://server.example:32400",
             accessToken = "server-token",
         )
-        val queue = api.createPlayQueue(machineId = "machine-1", ratingKey = "71936", continuous = true)
+        val queue = api.createPlayQueue(machineId = "machine-1", ratingKey = "71936")
 
         assertEquals(HttpMethod.Post, method)
         assertTrue(url.contains("/playQueues"))
@@ -178,10 +176,9 @@ class ServerApiMediaTest {
         assertTrue(url.contains("continuous=1"))
         assertTrue(url.contains("own=1"))
         assertTrue(url.contains("uri=server%3A%2F%2Fmachine-1%2Fcom.plexapp.plugins.library%2Flibrary%2Fmetadata%2F71936"))
-        assertEquals(2483L, queue.playQueueID)
-        assertEquals(3, queue.items.size)
-        assertEquals(111110L, queue.items.first().playQueueItemID)
-        assertEquals(listOf("Gem Glow", "Laser Light Cannon", "Cheeseburger Backpack"), queue.items.map { it.title })
+        assertEquals(3, queue.size)
+        assertEquals(111110L, queue.first().playQueueItemID)
+        assertEquals(listOf("Gem Glow", "Laser Light Cannon", "Cheeseburger Backpack"), queue.map { it.title })
     }
 
     @Test

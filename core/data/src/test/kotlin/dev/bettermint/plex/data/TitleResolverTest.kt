@@ -111,4 +111,20 @@ class TitleResolverTest {
 
         assertEquals(staleItem.title, out[0].title)
     }
+
+    @Test
+    fun `a definitive miss is cached but a transient failure retries`() = runTest {
+        val missCalls = AtomicInteger()
+        val misses = resolverWith(missCalls, body = """{"MediaContainer":{"size":0}}""")
+        misses.resolve(listOf(staleItem))
+        val out = misses.resolve(listOf(staleItem))
+        assertEquals(1, missCalls.get())
+        assertEquals(staleItem.title, out[0].title)
+
+        val errorCalls = AtomicInteger()
+        val errors = resolverWith(errorCalls, body = "oops", status = io.ktor.http.HttpStatusCode.ServiceUnavailable)
+        errors.resolve(listOf(staleItem))
+        errors.resolve(listOf(staleItem))
+        assertEquals(2, errorCalls.get())
+    }
 }

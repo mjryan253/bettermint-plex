@@ -20,4 +20,15 @@ data class PlexDeviceInfo(
         require(device.isNotBlank()) { "device must not be blank" }
         require(deviceName.isNotBlank()) { "deviceName must not be blank" }
     }
+
+    /** The X-Plex-* identity pairs, sent as headers or, for stream URLs, as query params. */
+    val headers: List<Pair<String, String>> = listOf(
+        "X-Plex-Product" to product,
+        "X-Plex-Version" to version,
+        "X-Plex-Client-Identifier" to clientIdentifier,
+        "X-Plex-Platform" to platform,
+        "X-Plex-Platform-Version" to platformVersion,
+        "X-Plex-Device" to device,
+        "X-Plex-Device-Name" to deviceName,
+    )
 }

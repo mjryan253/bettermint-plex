@@ -4,13 +4,11 @@ import io.ktor.client.HttpClient
 import io.ktor.client.engine.HttpClientEngine
 import io.ktor.client.engine.okhttp.OkHttp
 import io.ktor.client.plugins.api.createClientPlugin
-import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
 import io.ktor.client.plugins.logging.LogLevel
 import io.ktor.client.plugins.logging.Logger
 import io.ktor.client.plugins.logging.Logging
 import io.ktor.client.plugins.logging.SIMPLE
 import io.ktor.http.HttpHeaders
-import io.ktor.serialization.kotlinx.json.json
 import kotlinx.serialization.json.Json
 
 /**
@@ -22,7 +20,6 @@ object PlexClient {
 
     val json: Json = Json {
         ignoreUnknownKeys = true
-        explicitNulls = false
         coerceInputValues = true
     }
 
@@ -36,13 +33,7 @@ object PlexClient {
             onRequest { request, _ ->
                 request.headers.apply {
                     append(HttpHeaders.Accept, "application/json")
-                    append("X-Plex-Product", deviceInfo.product)
-                    append("X-Plex-Version", deviceInfo.version)
-                    append("X-Plex-Client-Identifier", deviceInfo.clientIdentifier)
-                    append("X-Plex-Platform", deviceInfo.platform)
-                    append("X-Plex-Platform-Version", deviceInfo.platformVersion)
-                    append("X-Plex-Device", deviceInfo.device)
-                    append("X-Plex-Device-Name", deviceInfo.deviceName)
+                    deviceInfo.headers.forEach { (name, value) -> append(name, value) }
                     // Explicit per-request token (e.g. a server access token) wins.
                     if (!contains("X-Plex-Token")) {
                         tokenProvider()?.let { append("X-Plex-Token", it) }
@@ -52,9 +43,6 @@ object PlexClient {
         }
 
         val config: io.ktor.client.HttpClientConfig<*>.() -> Unit = {
-            install(ContentNegotiation) {
-                json(this@PlexClient.json)
-            }
             install(plexHeaders)
             if (logging) {
                 // INFO logs method, URL and status only. Never raise to HEADERS/ALL:

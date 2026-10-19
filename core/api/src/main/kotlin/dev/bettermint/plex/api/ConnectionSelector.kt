@@ -15,16 +15,17 @@ object ConnectionSelector {
 
     data class Probe(val connection: PlexConnection, val latencyMs: Long)
 
+    private const val PROBE_TIMEOUT_MS = 2_000L
+
     suspend fun selectBest(
         connections: List<PlexConnection>,
-        timeoutMs: Long = 2_000,
         probe: suspend (PlexConnection) -> Boolean,
     ): PlexConnection? {
         val results = coroutineScope {
             connections.map { connection ->
                 async {
                     val start = System.currentTimeMillis()
-                    val ok = withTimeoutOrNull(timeoutMs) {
+                    val ok = withTimeoutOrNull(PROBE_TIMEOUT_MS) {
                         runCatching { probe(connection) }.getOrDefault(false)
                     } ?: false
                     if (ok) Probe(connection, System.currentTimeMillis() - start) else null

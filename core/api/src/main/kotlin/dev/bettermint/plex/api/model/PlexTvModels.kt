@@ -9,7 +9,6 @@ data class Pin(
     val code: String,
     val authToken: String? = null,
     val expiresIn: Long? = null,
-    val expiresAt: String? = null,
 )
 
 /** One entry of GET https://plex.tv/api/v2/resources */
@@ -20,7 +19,6 @@ data class PlexResource(
     val provides: String = "",
     val accessToken: String? = null,
     val owned: Boolean = false,
-    val presence: Boolean = false,
     val connections: List<PlexConnection> = emptyList(),
 ) {
     val isServer: Boolean get() = provides.split(",").contains("server")
@@ -28,20 +26,14 @@ data class PlexResource(
 
 @Serializable
 data class PlexConnection(
-    val protocol: String,
-    val address: String,
-    val port: Int,
     val uri: String,
     val local: Boolean = false,
     val relay: Boolean = false,
-    val IPv6: Boolean = false,
 )
 
 /** GET https://plex.tv/api/v2/home/users */
 @Serializable
 data class HomeUsers(
-    val id: Long? = null,
-    val name: String? = null,
     val users: List<HomeUser> = emptyList(),
 )
 
@@ -50,10 +42,7 @@ data class HomeUser(
     val id: Long,
     val uuid: String,
     val title: String,
-    val username: String? = null,
-    val admin: Boolean = false,
     val protected: Boolean = false,
-    val thumb: String? = null,
 )
 
 /** POST https://plex.tv/api/v2/home/users/{uuid}/switch */

@@ -3,6 +3,7 @@ package dev.bettermint.plex.data
 import dev.bettermint.plex.api.PlexTvApi
 import dev.bettermint.plex.api.model.Metadata
 import java.util.concurrent.ConcurrentHashMap
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
@@ -17,35 +18,42 @@ import kotlinx.coroutines.sync.withPermit
  */
 class TitleResolver(private val plexTv: PlexTvApi) {
 
+    /** guid to canonical title; "" marks a definitive miss so it isn't refetched. */
     private val cache = ConcurrentHashMap<String, String>()
     private val parallelism = Semaphore(6)
 
     suspend fun resolve(items: List<Metadata>): List<Metadata> {
-        if (items.none { needsResolve(it) }) return items
-        val resolved: Map<String, String> = coroutineScope {
-            items.filter { needsResolve(it) }
-                .mapNotNull { it.guid }
-                .distinct()
-                .map { guid ->
-                    async {
-                        parallelism.withPermit {
-                            val title = cache[guid] ?: runCatching {
-                                plexTv.getCanonicalMetadata(guid)?.title
-                            }.getOrNull()?.takeIf { it.isNotBlank() }?.also { cache[guid] = it }
-                            title?.let { guid to it }
-                        }
-                    }
-                }.awaitAll().filterNotNull().toMap()
+        val needs = items.map(::needsResolve)
+        if (true !in needs) return items
+        val missing = items.filterIndexed { i, _ -> needs[i] }
+            .map { it.guid!! }
+            .distinct()
+            .filterNot(cache::containsKey)
+        if (missing.isNotEmpty()) {
+            coroutineScope {
+                missing.map { guid -> async { parallelism.withPermit { fetch(guid) } } }.awaitAll()
+            }
         }
-        if (resolved.isEmpty()) return items
-        return items.map { item ->
-            val better = item.guid?.let(resolved::get)
-            if (better != null && needsResolve(item)) item.copy(title = better) else item
+        return items.mapIndexed { i, item ->
+            val better = if (needs[i]) cache[item.guid!!] else null
+            if (better.isNullOrEmpty()) item else item.copy(title = better)
         }
     }
 
     suspend fun resolve(item: Metadata?): Metadata? =
         item?.let { resolve(listOf(it)).first() }
+
+    /** Caches the provider's answer; transient errors are not cached, so they retry next time. */
+    private suspend fun fetch(guid: String) {
+        val title = try {
+            plexTv.getCanonicalMetadata(guid)?.title
+        } catch (e: CancellationException) {
+            throw e
+        } catch (_: Exception) {
+            return
+        }
+        cache[guid] = title?.takeIf { it.isNotBlank() }.orEmpty()
+    }
 
     private fun needsResolve(item: Metadata): Boolean =
         item.guid?.startsWith("plex://") == true && looksLikeFilename(item.title)

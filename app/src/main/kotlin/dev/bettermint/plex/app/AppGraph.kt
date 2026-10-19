@@ -21,13 +21,6 @@ class AppGraph(context: Context, engine: io.ktor.client.engine.HttpClientEngine?
 
     val authStore = AuthStore(context)
 
-    /**
-     * In-memory copy of the account token so the sync tokenProvider never blocks.
-     * AuthStore stays the source of truth; both are updated together.
-     */
-    @Volatile
-    var accountToken: String? = null
-
     val deviceInfo = PlexDeviceInfo(
         clientIdentifier = authStore.getOrCreateClientIdentifier(),
         platformVersion = Build.VERSION.RELEASE ?: "unknown",
@@ -37,7 +30,7 @@ class AppGraph(context: Context, engine: io.ktor.client.engine.HttpClientEngine?
 
     val client = PlexClient.create(
         deviceInfo,
-        tokenProvider = { accountToken },
+        tokenProvider = { authStore.accountToken },
         engine = engine,
         logging = BuildConfig.DEBUG,
     )
