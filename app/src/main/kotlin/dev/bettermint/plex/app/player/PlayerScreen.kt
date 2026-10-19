@@ -200,6 +200,21 @@ fun PlayerScreen(
         }
     }
 
+    // Fine-grained poll (Plex Pass markers): show Skip Intro inside the intro
+    // window, and start the next-up prompt early once credits begin.
+    var skipTarget by remember(currentKey) { mutableStateOf<Long?>(null) }
+    LaunchedEffect(player, currentKey, loaded.markers) {
+        val markers = loaded.markers
+        while (isActive) {
+            val pos = withContext(Dispatchers.Main) { player.currentPosition }
+            skipTarget = PlaybackRepository.markerAt(markers, "intro", pos)?.endTimeOffset
+            if (nextUp == null && PlaybackRepository.markerAt(markers, "credits", pos) != null) {
+                PlaybackRepository.nextInQueue(queue, currentKey)?.let { nextUp = it }
+            }
+            delay(750)
+        }
+    }
+
     DisposableEffect(player) {
         onDispose {
             player.release()
@@ -221,6 +236,17 @@ fun PlayerScreen(
         update = { view -> view.player = player },
         modifier = Modifier.fillMaxSize(),
     )
+
+    // Skip Intro sits bottom-end over the video. Touch works now; TV d-pad focus
+    // over the PlayerView is polished in M6.
+    skipTarget?.let { target ->
+        androidx.compose.foundation.layout.Box(
+            modifier = Modifier.fillMaxSize().padding(48.dp),
+            contentAlignment = Alignment.BottomEnd,
+        ) {
+            Button(onClick = { player.seekTo(target) }) { Text("Skip Intro") }
+        }
+    }
 
     fun advanceTo(next: Metadata) {
         currentKey = next.ratingKey ?: return

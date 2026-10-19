@@ -3,6 +3,7 @@ package dev.bettermint.plex.data
 import dev.bettermint.plex.api.PlaybackDecider
 import dev.bettermint.plex.api.PlaybackDecider.Method
 import dev.bettermint.plex.api.ServerApi
+import dev.bettermint.plex.api.model.Marker
 import dev.bettermint.plex.api.model.MediaStream
 import dev.bettermint.plex.api.model.Metadata
 import java.util.UUID
@@ -100,6 +101,14 @@ class PlaybackRepository(
             val index = items.indexOfFirst { it.ratingKey == afterRatingKey }
             return items.getOrNull(index + 1)?.takeIf { index >= 0 }
         }
+
+        /** The marker of [type] (intro/credits) whose window contains [posMs], or null. */
+        fun markerAt(markers: List<Marker>, type: String, posMs: Long): Marker? =
+            markers.firstOrNull { m ->
+                val start = m.startTimeOffset
+                val end = m.endTimeOffset
+                m.type == type && start != null && end != null && end > start && posMs >= start && posMs < end
+            }
 
         const val WATCHED_FRACTION = 0.9
 

@@ -46,6 +46,20 @@ class PlaybackRepositoryTest {
     }
 
     @Test
+    fun `markerAt finds the marker whose window contains the position`() {
+        val markers = listOf(
+            dev.bettermint.plex.api.model.Marker(type = "intro", startTimeOffset = 5000, endTimeOffset = 35000),
+            dev.bettermint.plex.api.model.Marker(type = "credits", startTimeOffset = 600000, endTimeOffset = 660000),
+        )
+        assertNull("before intro", PlaybackRepository.markerAt(markers, "intro", 4000))
+        assertEquals(35000L, PlaybackRepository.markerAt(markers, "intro", 10000)?.endTimeOffset)
+        assertNull("intro end is exclusive", PlaybackRepository.markerAt(markers, "intro", 35000))
+        assertEquals("credits", PlaybackRepository.markerAt(markers, "credits", 620000)?.type)
+        assertNull("wrong type", PlaybackRepository.markerAt(markers, "credits", 10000))
+        assertNull("no markers", PlaybackRepository.markerAt(emptyList(), "intro", 10000))
+    }
+
+    @Test
     fun `isWatched triggers at ninety percent`() {
         assertFalse(PlaybackRepository.isWatched(timeMs = 0, durationMs = 1000))
         assertFalse(PlaybackRepository.isWatched(timeMs = 899, durationMs = 1000))
