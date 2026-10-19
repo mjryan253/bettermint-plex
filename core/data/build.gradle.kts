@@ -13,5 +13,6 @@ android {
 
 dependencies {
     api(project(":core:api"))
+    api(libs.androidx.paging.common)
     implementation(libs.androidx.datastore.preferences)
 }

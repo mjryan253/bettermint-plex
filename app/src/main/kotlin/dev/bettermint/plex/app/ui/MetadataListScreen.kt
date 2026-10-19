@@ -1,0 +1,54 @@
+package dev.bettermint.plex.app.ui
+
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.lazy.grid.items
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.produceState
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.unit.dp
+import dev.bettermint.plex.api.model.Metadata
+import dev.bettermint.plex.data.LibraryRepository
+
+/** Simple non-paged poster grid used for collections, playlists and their contents. */
+@Composable
+fun MetadataListScreen(
+    title: String,
+    load: suspend () -> List<Metadata>,
+    library: LibraryRepository,
+    onItem: (Metadata) -> Unit,
+) {
+    val items by produceState<List<Metadata>?>(initialValue = null) {
+        value = runCatching { load() }.getOrDefault(emptyList())
+    }
+
+    Column(Modifier.fillMaxSize().padding(horizontal = 24.dp)) {
+        Spacer(Modifier.height(8.dp))
+        Text(title, style = MaterialTheme.typography.headlineMedium)
+        Spacer(Modifier.height(12.dp))
+        when (val list = items) {
+            null -> Text("Loading...")
+            else -> {
+                if (list.isEmpty()) Text("Nothing here.")
+                LazyVerticalGrid(
+                    columns = GridCells.Adaptive(minSize = POSTER_WIDTH_DP.dp),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp),
+                    verticalArrangement = Arrangement.spacedBy(12.dp),
+                ) {
+                    items(list, key = { it.ratingKey ?: it.title }) { item ->
+                        PosterCard(item = item, library = library, onClick = { onItem(item) })
+                    }
+                }
+            }
+        }
+    }
+}

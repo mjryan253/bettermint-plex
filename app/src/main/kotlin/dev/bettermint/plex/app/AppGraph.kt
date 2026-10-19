@@ -7,6 +7,7 @@ import dev.bettermint.plex.api.PlexClient
 import dev.bettermint.plex.api.PlexDeviceInfo
 import dev.bettermint.plex.api.PlexTvApi
 import dev.bettermint.plex.data.AuthStore
+import dev.bettermint.plex.data.LibraryRepository
 import dev.bettermint.plex.data.ServerRepository
 
 /** Manual DI: one place that builds and owns the app's singletons. */
@@ -37,4 +38,8 @@ class AppGraph(context: Context) {
     val plexTv = PlexTvApi(client)
 
     val serverRepository = ServerRepository(client, plexTv, authStore)
+
+    /** Set by SessionViewModel once a server connection is established. */
+    @Volatile
+    var library: LibraryRepository? = null
 }

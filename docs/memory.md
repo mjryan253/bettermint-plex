@@ -17,6 +17,7 @@ Full approved plan: `~/.claude/plans/https-github-com-morluto-rea-use-the-rea-ti
 - **Targets**: Fire OS stick/cube (pre-2026) + Android phone/tablet. Vega OS out of scope.
 - **References (study, never copy — GPL)**: jellyfin/jellyfin-androidtv, edde746/plezy; python-plexapi + developer.plex.tv OpenAPI spec for API behavior; REA MCP for HAR/APK analysis when docs fall short.
 - **Design**: M0–M6 plain functional defaults; M7 visual design pass guided by `frontend-design-skill.md` + `frontend-design-skill-path.md` (direction approved by user before implementing).
+- **Design direction (user, 2026-10-19)**: the app's DEFAULT skin is a Palm Pre webOS look (card metaphor, dark glossy styling); design it at M7 using online screenshots of webOS/Palm Pre as reference (user pointed at a DuckDuckGo image search for "webOS palmpre screenshots"). Until M7, use a deliberately MINIMALIST test skin. Structure theming so skins are swappable (minimalist for testing, webOS as the shipped default).
 
 ## Environment
 
@@ -34,7 +35,10 @@ Full approved plan: `~/.claude/plans/https-github-com-morluto-rea-use-the-rea-ti
 
 ## Status
 
-- **Milestone**: M1 COMPLETE (2026-10-19, verified live on Basement TV). Next: M2 (browse/search/details + collections/playlists/extras), then HITL Gate A.
+- **Milestone**: M2 CODE COMPLETE and verified on Basement TV (2026-10-19). NOW AT HITL GATE A: user tests sign-in + browse on their devices before M3 playback work begins.
+- M2 verified live by adb walkthrough: home hubs (Continue Watching, On Deck) with real posters via /photo/:/transcode; Movies grid (adaptive columns, Paging3 over X-Plex-Container-Start/Size, smooth deep scroll past page 1); movie detail page (ratings, summary, add-to-playlist button, Trailers & Extras via includeExtras); debounced search returning hubs. Minimalist dark test skin (ui/theme/Skins.kt, swappable Skin enum; webOS skin becomes default at M7).
+- M2 NOT yet verified (left for Gate A / later): show->season->episode drill-down on screen, collections browse, playlist add visible in Plex Web, phone form factor.
+- M2 structure: MainNavHost routes (home, library/{key}, details/{ratingKey}, search, collections, collectionItems, playlists, playlistItems); LibraryRepository + LibraryItemsPagingSource in :core:data; PosterCard with episode title/thumb handling; extras open detail pages until the M3 player exists.
 - M1 built so far (all committed, JVM tests green):
   - `:core:api`: PlexClient (Ktor + per-request X-Plex header plugin, token override per request), PlexTvApi (createPin non-strong / getPin poll / getUser token check / getResources / getHomeUsers / switchHomeUser), ServerApi (getIdentity, getLibrarySections), ConnectionSelector (parallel probe, local > remote > relay, latency tiebreak), DTOs, PlexApiException.
   - `:core:data`: AuthStore (DataStore: client id, account token, selected server), ServerRepository (listServers, connect + persist best connection, cachedServer).
@@ -60,3 +64,4 @@ Full approved plan: `~/.claude/plans/https-github-com-morluto-rea-use-the-rea-ti
 - **2026-10-18** - M1 code complete: Plex API layer with header plugin and fixture tests; AuthStore/ServerRepository; session state machine with sign-in, server picker, libraries and Plex Home screens; deployed to Fire Stick, waiting on user's plex.tv/link entry. Fixed strong-pin bug (manual entry needs non-strong 4-char codes). CLAUDE.md updated by user: no em dashes ever (non-numerical).
 - **2026-10-19** - Basement TV stick (192.168.1.125:5555, AFTMM) authorized and made primary test device; app installed there, sign-in screen live. New gate recorded: rigorous-but-simple test suite after MVP completion, before optional/v2 features.
 - **2026-10-19** - M1 verified live on Basement TV (192.168.1.125): PIN sign-in, server picker listed "thegremlin", connection racing picked local URI (logcat-confirmed: 3 parallel /identity probes, local chosen), libraries listed, session survives cold restart, home-user switch POST returned 201 and reconnected. Added Ktor request logging (INFO level only; HEADERS/ALL would leak X-Plex-Token) gated on BuildConfig.DEBUG. DTO fixtures validated by live parsing. Known UX gap for M6: no visible focus indicator on plain Material3 cards.
+- **2026-10-19** - M2: media API (paged items, hubs, search, details+extras, children, collections, playlists, image URLs) with fixture tests; nav host + home/grid/detail/search/list screens; minimalist swappable test skin; verified live on Basement TV via adb walkthrough with screenshots. Design notes: webOS Palm Pre is the target default skin at M7 (user instruction); minimalist skin is for testing only.

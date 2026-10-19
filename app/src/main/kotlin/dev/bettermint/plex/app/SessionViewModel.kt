@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dev.bettermint.plex.api.ServerApi
 import dev.bettermint.plex.api.model.HomeUser
+import dev.bettermint.plex.data.LibraryRepository
 import dev.bettermint.plex.api.model.LibrarySection
 import dev.bettermint.plex.api.model.PlexResource
 import kotlinx.coroutines.Job
@@ -105,10 +106,11 @@ class SessionViewModel(private val graph: AppGraph) : ViewModel() {
 
     private suspend fun loadReady(api: ServerApi) {
         serverApi = api
+        val selected = graph.authStore.selectedServer()
+        graph.library = LibraryRepository(api, machineId = selected?.machineId ?: "")
         val libraries = api.getLibrarySections()
         val users = runCatching { graph.plexTv.getHomeUsers().users }.getOrDefault(emptyList())
-        val name = graph.authStore.selectedServer()?.name ?: "Plex Server"
-        _state.value = SessionState.Ready(name, libraries, users)
+        _state.value = SessionState.Ready(selected?.name ?: "Plex Server", libraries, users)
     }
 
     fun switchHomeUser(user: HomeUser, pin: String?) {
