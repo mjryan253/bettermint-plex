@@ -32,11 +32,18 @@ Full approved plan: `~/.claude/plans/https-github-com-morluto-rea-use-the-rea-ti
 
 ## Status
 
-- **Milestone**: M0 COMPLETE (2026-10-18). Next: M1 (auth + server connect + Plex Home).
-- Build verified on host: `./gradlew :core:api:test :app:assembleDebug` green (Gradle 9.8.1 / AGP 9.4.1 / JDK 21.0.12.1, first try).
-- Deployed to Fire TV Stick 4K (AFTMM "mantis", Fire OS 6 / API 25 — the minSdk floor device) at 192.168.1.87:5555 via host adb; renders "Bettermint — TV" (screenshot-verified), launched via LEANBACK_LAUNCHER intent.
-- **Pending**: mobile form-factor check on a real phone (no phone connected yet); second device at 192.168.1.125:5555 (another Fire TV) still shows "unauthorized" — user hasn't accepted the ADB prompt there.
-- GitHub repo created and pushed by user: github.com/mjryan253/bettermint-plex.
+- **Milestone**: M0 COMPLETE. M1 (auth + server connect + Plex Home) CODE COMPLETE and deployed; awaiting the user's plex.tv/link sign-in to verify the live flow.
+- M1 built so far (all committed, JVM tests green):
+  - `:core:api`: PlexClient (Ktor + per-request X-Plex header plugin, token override per request), PlexTvApi (createPin non-strong / getPin poll / getUser token check / getResources / getHomeUsers / switchHomeUser), ServerApi (getIdentity, getLibrarySections), ConnectionSelector (parallel probe, local > remote > relay, latency tiebreak), DTOs, PlexApiException.
+  - `:core:data`: AuthStore (DataStore: client id, account token, selected server), ServerRepository (listServers, connect + persist best connection, cachedServer).
+  - `:app`: BettermintApp + AppGraph (manual DI; in-memory token mirror for the sync tokenProvider), SessionViewModel (Loading / SignIn with 2s PIN poll / PickServer / Ready / Failed; switchHomeUser re-discovers the server because server access tokens are per-user), screens in ui/SessionScreens.kt, ViewModel factory in MainActivity.
+  - Tests: fixture-based (core/api/src/test/resources/fixtures/) for pin, resources, home users, identity, sections, connection ranking, header completeness. FIXTURES ARE HAND-WRITTEN from docs/python-plexapi shapes; replace or verify against real scrubbed captures after first sign-in.
+- **Live state on the Fire Stick (192.168.1.87:5555)**: app installed and sitting on the sign-in screen; it created a real plex.tv PIN (code B8SF at session end, 15 min expiry, likely expired by next session; the Retry button or a relaunch gets a fresh code). User had NOT yet entered the code when the session ended.
+- **Resume point (next session)**: 1) relaunch app for a fresh code if needed, user enters it at plex.tv/link; 2) verify token persisted, server picker lists real servers (screenshot via adb); 3) user or adb d-pad selects the server; verify libraries list loads from the real PMS; 4) verify Plex Home user switch (second user's distinct state); 5) replace hand-written fixtures with scrubbed real captures where they differ; 6) M1 milestone commit; then M2 (browse/search/details + collections/playlists/extras).
+- Real-world fix found on device: `strong=true` pins return long URL-flow codes that are wrong for manual entry at plex.tv/link; we use non-strong 4-char pins (test locks this in).
+- **Pending**: mobile form-factor check on a real phone (none connected yet); second Fire TV at 192.168.1.125:5555 still "unauthorized" (ADB prompt not accepted on that device).
+- GitHub repo created and pushed by user: github.com/mjryan253/bettermint-plex. 5 local commits exist beyond that push; do not push without explicit instruction.
+- **CLAUDE.md rule added 2026-10-18: never use em dashes** (except numerical use) in any output: code, docs, commits, UI strings. Pre-existing em dashes in committed files stay (surgical rule); everything new must comply.
 
 ### SDK install gotchas (host)
 - Ubuntu/Mint's apt `sdkmanager` package is broken — reports installs it never performs (its real SDK lives root-owned at /usr/lib/android-sdk). Do not use.
@@ -48,3 +55,4 @@ Full approved plan: `~/.claude/plans/https-github-com-morluto-rea-use-the-rea-ti
 - **2026-10-18** — Project planned and approved (research: REA capabilities, top-requested Plex features, client landscape; decisions above). Git repo initialized with repo-local identity; docs/memory.md created.
 - **2026-10-18** — M0 scaffold: Gradle 9.8.1 wrapper, version catalog (AGP 9.4.1 / Kotlin 2.4.21 / Compose BOM 2026.09.00 / Media3 1.11.1 / Ktor 3.6.0 — cross-checked against jellyfin-androidtv master and Maven metadata), modules :core:api (pure JVM) / :core:data / :app, AGP 9 built-in Kotlin pattern (kotlin-gradle on buildscript classpath, kotlin.compose plugin in :app), dual LAUNCHER/LEANBACK_LAUNCHER manifest, local.properties → ~/Android/Sdk.
 - **2026-10-18** — M0 complete: build verified on host (test + assembleDebug green); hello APK deployed to Fire TV Stick 4K (AFTMM, Fire OS 6) via host adb, TV form factor + leanback launcher confirmed by screenshot. SDK gotchas documented above.
+- **2026-10-18** - M1 code complete: Plex API layer with header plugin and fixture tests; AuthStore/ServerRepository; session state machine with sign-in, server picker, libraries and Plex Home screens; deployed to Fire Stick, waiting on user's plex.tv/link entry. Fixed strong-pin bug (manual entry needs non-strong 4-char codes). CLAUDE.md updated by user: no em dashes ever (non-numerical).
