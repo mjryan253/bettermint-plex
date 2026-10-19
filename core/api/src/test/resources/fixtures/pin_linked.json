@@ -1,0 +1,12 @@
+{
+  "id": 12345678901,
+  "code": "ABCD",
+  "product": "Bettermint",
+  "trusted": false,
+  "clientIdentifier": "test-client-id",
+  "expiresIn": 900,
+  "createdAt": "2026-10-18T20:00:00Z",
+  "expiresAt": "2026-10-18T20:15:00Z",
+  "authToken": "REDACTED-ACCOUNT-TOKEN",
+  "newRegistration": false
+}

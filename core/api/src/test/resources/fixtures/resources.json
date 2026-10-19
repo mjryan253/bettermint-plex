@@ -1,0 +1,55 @@
+[
+  {
+    "name": "home-server",
+    "product": "Plex Media Server",
+    "productVersion": "1.41.0.8000",
+    "platform": "Linux",
+    "clientIdentifier": "machine-id-1",
+    "createdAt": "2020-01-01T00:00:00Z",
+    "provides": "server",
+    "owned": true,
+    "accessToken": "REDACTED-SERVER-TOKEN",
+    "publicAddressMatches": true,
+    "presence": true,
+    "connections": [
+      {
+        "protocol": "https",
+        "address": "192.168.1.50",
+        "port": 32400,
+        "uri": "https://192-168-1-50.abcdef.plex.direct:32400",
+        "local": true,
+        "relay": false,
+        "IPv6": false
+      },
+      {
+        "protocol": "https",
+        "address": "203.0.113.10",
+        "port": 32400,
+        "uri": "https://203-0-113-10.abcdef.plex.direct:32400",
+        "local": false,
+        "relay": false,
+        "IPv6": false
+      },
+      {
+        "protocol": "https",
+        "address": "relay.plex.tv",
+        "port": 443,
+        "uri": "https://abcdef.plex.direct:443",
+        "local": false,
+        "relay": true,
+        "IPv6": false
+      }
+    ]
+  },
+  {
+    "name": "Some Phone",
+    "product": "Plex for Android",
+    "productVersion": "10.0",
+    "platform": "Android",
+    "clientIdentifier": "phone-id-1",
+    "provides": "player,controller",
+    "owned": true,
+    "accessToken": null,
+    "connections": []
+  }
+]

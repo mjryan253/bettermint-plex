@@ -1,0 +1,31 @@
+{
+  "id": 111,
+  "name": "My Home",
+  "guestUserID": 222,
+  "guestEnabled": false,
+  "subscription": true,
+  "users": [
+    {
+      "id": 1001,
+      "uuid": "uuid-admin",
+      "title": "Admin User",
+      "username": "admin_user",
+      "email": "admin@example.com",
+      "admin": true,
+      "guest": false,
+      "protected": true,
+      "thumb": "https://plex.tv/users/abc/avatar"
+    },
+    {
+      "id": 1002,
+      "uuid": "uuid-kid",
+      "title": "Kid",
+      "username": null,
+      "email": null,
+      "admin": false,
+      "guest": false,
+      "protected": false,
+      "thumb": null
+    }
+  ]
+}
