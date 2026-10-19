@@ -5,6 +5,7 @@ import androidx.lifecycle.viewModelScope
 import dev.bettermint.plex.api.ServerApi
 import dev.bettermint.plex.api.model.HomeUser
 import dev.bettermint.plex.data.LibraryRepository
+import dev.bettermint.plex.data.PlaybackRepository
 import dev.bettermint.plex.api.model.LibrarySection
 import dev.bettermint.plex.api.model.PlexResource
 import kotlinx.coroutines.Job
@@ -112,6 +113,7 @@ class SessionViewModel(private val graph: AppGraph) : ViewModel() {
             machineId = selected?.machineId ?: "",
             titleResolver = graph.titleResolver,
         )
+        graph.playback = PlaybackRepository(api, graph.authStore)
         val libraries = api.getLibrarySections()
         val users = runCatching { graph.plexTv.getHomeUsers().users }.getOrDefault(emptyList())
         _state.value = SessionState.Ready(selected?.name ?: "Plex Server", libraries, users)
@@ -140,4 +142,8 @@ class SessionViewModel(private val graph: AppGraph) : ViewModel() {
     fun retry() {
         viewModelScope.launch { boot() }
     }
+
+    fun playbackOrNull(): PlaybackRepository? = graph.playback
+
+    fun authStore() = graph.authStore
 }

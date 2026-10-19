@@ -22,9 +22,25 @@ object Routes {
     const val PLAYLISTS = "playlists"
     fun playlistItems(ratingKey: String, title: String) =
         "playlistItems/$ratingKey?title=${Uri.encode(title)}"
-    fun player(ratingKey: String, mediaIndex: Int = 0, startMs: Long = 0) =
-        "player/$ratingKey?mediaIndex=$mediaIndex&startMs=$startMs"
+    fun player(
+        ratingKey: String,
+        mediaIndex: Int = 0,
+        startMs: Long = 0,
+        audioId: Long? = null,
+        subId: Long? = null,
+        maxKbps: Int? = null,
+    ) = buildString {
+        append("player/$ratingKey?mediaIndex=$mediaIndex&startMs=$startMs")
+        audioId?.let { append("&audioId=$it") }
+        subId?.let { append("&subId=$it") }
+        maxKbps?.let { append("&maxKbps=$it") }
+    }
+
+    const val SETTINGS = "settings"
 }
+
+/** Deterministic device-test shortcut straight into playback. */
+data class TestPlay(val ratingKey: String, val startMs: Long, val maxKbps: Int?)
 
 @Composable
 fun MainNavHost(
@@ -32,13 +48,23 @@ fun MainNavHost(
     ready: SessionState.Ready,
     sessionViewModel: SessionViewModel,
     openRatingKey: String? = null,
+    testPlay: TestPlay? = null,
 ) {
     val nav: NavHostController = rememberNavController()
 
     // Test hook: `adb shell am start ... --es openRatingKey <key>` jumps straight
     // to that item's detail page, so device verification is deterministic.
-    androidx.compose.runtime.LaunchedEffect(openRatingKey) {
-        if (!openRatingKey.isNullOrBlank()) nav.navigate(Routes.details(openRatingKey))
+    androidx.compose.runtime.LaunchedEffect(openRatingKey, testPlay) {
+        when {
+            testPlay != null -> nav.navigate(
+                Routes.player(
+                    testPlay.ratingKey,
+                    startMs = testPlay.startMs,
+                    maxKbps = testPlay.maxKbps,
+                ),
+            )
+            !openRatingKey.isNullOrBlank() -> nav.navigate(Routes.details(openRatingKey))
+        }
     }
 
     NavHost(navController = nav, startDestination = Routes.HOME) {
@@ -56,13 +82,28 @@ fun MainNavHost(
         composable(Routes.SEARCH) {
             SearchScreen(library, nav)
         }
-        composable("player/{ratingKey}?mediaIndex={mediaIndex}&startMs={startMs}") { entry ->
-            PlayerScreen(
-                library = library,
-                ratingKey = entry.arguments?.getString("ratingKey").orEmpty(),
-                mediaIndex = entry.arguments?.getString("mediaIndex")?.toIntOrNull() ?: 0,
-                startMs = entry.arguments?.getString("startMs")?.toLongOrNull() ?: 0L,
-            )
+        composable(
+            "player/{ratingKey}?mediaIndex={mediaIndex}&startMs={startMs}" +
+                "&audioId={audioId}&subId={subId}&maxKbps={maxKbps}",
+        ) { entry ->
+            val playback = sessionViewModel.playbackOrNull()
+            if (playback == null) {
+                LoadingScreen()
+            } else {
+                PlayerScreen(
+                    library = library,
+                    playback = playback,
+                    ratingKey = entry.arguments?.getString("ratingKey").orEmpty(),
+                    mediaIndex = entry.arguments?.getString("mediaIndex")?.toIntOrNull() ?: 0,
+                    startMs = entry.arguments?.getString("startMs")?.toLongOrNull() ?: 0L,
+                    audioStreamId = entry.arguments?.getString("audioId")?.toLongOrNull(),
+                    subtitleStreamId = entry.arguments?.getString("subId")?.toLongOrNull(),
+                    maxKbpsOverride = entry.arguments?.getString("maxKbps")?.toIntOrNull(),
+                )
+            }
+        }
+        composable(Routes.SETTINGS) {
+            SettingsScreen(sessionViewModel)
         }
         composable("collections/{key}?title={title}") { entry ->
             MetadataListScreen(

@@ -65,7 +65,6 @@ class PlaybackDeciderTest {
             ratingKey = "77150",
             sessionId = "session-guid",
             directStream = false,
-            startMs = 65_000,
             maxVideoBitrateKbps = 4000,
             subtitleStreamId = 42,
             burnSubtitles = true,
@@ -77,7 +76,6 @@ class PlaybackDeciderTest {
         assertTrue(url.contains("directPlay=0"))
         assertTrue(url.contains("directStream=0"))
         assertTrue(url.contains("session=session-guid"))
-        assertTrue(url.contains("offset=65"))
         assertTrue(url.contains("maxVideoBitrate=4000"))
         assertTrue(url.contains("subtitleStreamID=42"))
         assertTrue(url.contains("subtitles=burn"))
@@ -98,7 +96,6 @@ class PlaybackDeciderTest {
         val url = api.hlsStartUrl(ratingKey = "1", sessionId = "s")
 
         assertTrue(url.contains("directStream=1"))
-        assertTrue(!url.contains("offset="))
         assertTrue(!url.contains("maxVideoBitrate"))
         assertTrue(!url.contains("audioStreamID"))
         assertTrue(!url.contains("subtitleStreamID"))

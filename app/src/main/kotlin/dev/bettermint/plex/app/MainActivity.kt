@@ -42,7 +42,15 @@ class MainActivity : ComponentActivity() {
                         is SessionState.Ready -> {
                             val library = graph.library
                             if (library != null) {
-                                MainNavHost(library, s, viewModel, intent?.getStringExtra("openRatingKey"))
+                                val testPlayKey = intent?.getStringExtra("testPlayKey")
+                                val testPlay = testPlayKey?.let {
+                                    dev.bettermint.plex.app.ui.TestPlay(
+                                        ratingKey = it,
+                                        startMs = intent?.getLongExtra("testStartMs", 0L) ?: 0L,
+                                        maxKbps = intent?.getIntExtra("testMaxKbps", 0)?.takeIf { k -> k > 0 },
+                                    )
+                                }
+                                MainNavHost(library, s, viewModel, intent?.getStringExtra("openRatingKey"), testPlay)
                             } else {
                                 LoadingScreen()
                             }

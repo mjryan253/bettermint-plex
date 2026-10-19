@@ -66,6 +66,7 @@ fun HomeScreen(
                 }
                 AssistChip(onClick = { nav.navigate(Routes.SEARCH) }, label = { Text("Search") })
                 AssistChip(onClick = { nav.navigate(Routes.PLAYLISTS) }, label = { Text("Playlists") })
+                AssistChip(onClick = { nav.navigate(Routes.SETTINGS) }, label = { Text("Settings") })
             }
         }
 

@@ -123,7 +123,6 @@ class ServerApi(
         mediaIndex: Int = 0,
         partIndex: Int = 0,
         directStream: Boolean = true,
-        startMs: Long = 0,
         maxVideoBitrateKbps: Int? = null,
         audioStreamId: Long? = null,
         subtitleStreamId: Long? = null,
@@ -139,7 +138,6 @@ class ServerApi(
         append("&directPlay=0")
         append("&directStream=").append(if (directStream) "1" else "0")
         append("&session=$sessionId")
-        if (startMs > 0) append("&offset=").append(startMs / 1000)
         maxVideoBitrateKbps?.let { append("&maxVideoBitrate=$it") }
         audioStreamId?.let { append("&audioStreamID=$it") }
         subtitleStreamId?.let { append("&subtitleStreamID=$it") }

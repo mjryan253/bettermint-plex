@@ -16,6 +16,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.AssistChip
 import androidx.compose.material3.Button
+import androidx.compose.material3.Card
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.MaterialTheme
@@ -86,6 +87,9 @@ fun DetailScreen(
     var showPlaylistPicker by remember { mutableStateOf(false) }
     var playlistMessage by remember { mutableStateOf<String?>(null) }
     var versionIndex by remember(ratingKey) { mutableStateOf(0) }
+    var audioId by remember(ratingKey) { mutableStateOf<Long?>(null) }
+    var subId by remember(ratingKey) { mutableStateOf<Long?>(null) }
+    var qualityOverride by remember(ratingKey) { mutableStateOf<Int?>(null) }
 
     LazyColumn(
         Modifier.fillMaxSize().padding(horizontal = 24.dp),
@@ -124,21 +128,63 @@ fun DetailScreen(
                                 }
                             }
                         }
+                        val streams = item.media.getOrNull(versionIndex)?.parts?.firstOrNull()
+                            ?.streams.orEmpty()
+                        val audioTracks = streams.filter { it.isAudio }
+                        val subtitleTracks = streams.filter { it.isSubtitle }
+                        if (audioTracks.size > 1) {
+                            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                audioTracks.forEach { track ->
+                                    FilterChip(
+                                        selected = audioId == track.id || (audioId == null && track.selected),
+                                        onClick = { audioId = track.id },
+                                        label = { Text(track.label) },
+                                    )
+                                }
+                            }
+                        }
+                        if (subtitleTracks.isNotEmpty()) {
+                            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                FilterChip(
+                                    selected = subId == null,
+                                    onClick = { subId = null },
+                                    label = { Text("No subtitles") },
+                                )
+                                subtitleTracks.forEach { track ->
+                                    FilterChip(
+                                        selected = subId == track.id,
+                                        onClick = { subId = track.id },
+                                        label = { Text(track.label) },
+                                    )
+                                }
+                            }
+                        }
+                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            listOf(null, 8000, 4000, 2000).forEach { kbps ->
+                                FilterChip(
+                                    selected = qualityOverride == kbps,
+                                    onClick = { qualityOverride = kbps },
+                                    label = { Text(if (kbps == null) "Auto quality" else "${kbps / 1000} Mbps") },
+                                )
+                            }
+                        }
                         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                             val resumeMs = item.viewOffset ?: 0L
+                            fun play(startMs: Long) = nav.navigate(
+                                Routes.player(
+                                    item.ratingKey.orEmpty(),
+                                    versionIndex,
+                                    startMs,
+                                    audioId = audioId,
+                                    subId = subId,
+                                    maxKbps = qualityOverride,
+                                ),
+                            )
                             if (resumeMs > 0) {
-                                Button(onClick = {
-                                    nav.navigate(
-                                        Routes.player(item.ratingKey.orEmpty(), versionIndex, resumeMs),
-                                    )
-                                }) { Text("Resume ${formatMs(resumeMs)}") }
-                                OutlinedButton(onClick = {
-                                    nav.navigate(Routes.player(item.ratingKey.orEmpty(), versionIndex))
-                                }) { Text("Start over") }
+                                Button(onClick = { play(resumeMs) }) { Text("Resume ${formatMs(resumeMs)}") }
+                                OutlinedButton(onClick = { play(0) }) { Text("Start over") }
                             } else {
-                                Button(onClick = {
-                                    nav.navigate(Routes.player(item.ratingKey.orEmpty(), versionIndex))
-                                }) { Text("Play") }
+                                Button(onClick = { play(0) }) { Text("Play") }
                             }
                         }
                     }
@@ -170,6 +216,44 @@ fun DetailScreen(
                                 library = library,
                                 onClick = { nav.navigate(Routes.details(child.ratingKey.orEmpty())) },
                             )
+                        }
+                    }
+                }
+            }
+        }
+
+        if (item.chapters.isNotEmpty()) {
+            item {
+                Column {
+                    Text("Chapters", style = MaterialTheme.typography.titleMedium)
+                    Spacer(Modifier.height(8.dp))
+                    LazyRow(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                        items(item.chapters, key = { it.id ?: (it.startTimeOffset ?: 0L) }) { chapter ->
+                            Card(onClick = {
+                                nav.navigate(
+                                    Routes.player(
+                                        item.ratingKey.orEmpty(),
+                                        versionIndex,
+                                        chapter.startTimeOffset ?: 0L,
+                                        audioId = audioId,
+                                        subId = subId,
+                                        maxKbps = qualityOverride,
+                                    ),
+                                )
+                            }) {
+                                AsyncImage(
+                                    model = library.imageUrl(chapter.thumb, 240, 135),
+                                    contentDescription = chapter.tag,
+                                    contentScale = ContentScale.Crop,
+                                    modifier = Modifier.width(160.dp).height(90.dp),
+                                )
+                                Text(
+                                    chapter.tag ?: "Chapter ${chapter.index ?: ""}".trim() +
+                                        " ${formatMs(chapter.startTimeOffset ?: 0L)}",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    modifier = Modifier.padding(6.dp),
+                                )
+                            }
                         }
                     }
                 }

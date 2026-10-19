@@ -1,6 +1,7 @@
 package dev.bettermint.plex.data
 
 import dev.bettermint.plex.api.ConnectionSelector
+import dev.bettermint.plex.api.PlexDeviceInfo
 import dev.bettermint.plex.api.PlexTvApi
 import dev.bettermint.plex.api.ServerApi
 import dev.bettermint.plex.api.model.PlexResource
@@ -11,6 +12,7 @@ class ServerRepository(
     private val client: HttpClient,
     private val plexTv: PlexTvApi,
     private val authStore: AuthStore,
+    private val deviceInfo: PlexDeviceInfo? = null,
 ) {
 
     suspend fun listServers(): List<PlexResource> =
@@ -32,14 +34,15 @@ class ServerRepository(
                 name = server.name,
                 uri = best.uri,
                 accessToken = server.accessToken,
+                localConnection = best.local,
             ),
         )
-        return ServerApi(client, best.uri, server.accessToken)
+        return ServerApi(client, best.uri, server.accessToken, deviceInfo)
     }
 
     /** Rebuild the API for the cached selection, or null if nothing is cached. */
     suspend fun cachedServer(): ServerApi? {
         val saved = authStore.selectedServer() ?: return null
-        return ServerApi(client, saved.uri, saved.accessToken)
+        return ServerApi(client, saved.uri, saved.accessToken, deviceInfo)
     }
 }

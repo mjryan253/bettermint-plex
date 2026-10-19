@@ -8,6 +8,7 @@ import dev.bettermint.plex.api.PlexDeviceInfo
 import dev.bettermint.plex.api.PlexTvApi
 import dev.bettermint.plex.data.AuthStore
 import dev.bettermint.plex.data.LibraryRepository
+import dev.bettermint.plex.data.PlaybackRepository
 import dev.bettermint.plex.data.ServerRepository
 import dev.bettermint.plex.data.TitleResolver
 
@@ -23,7 +24,7 @@ class AppGraph(context: Context) {
     @Volatile
     var accountToken: String? = null
 
-    private val deviceInfo = PlexDeviceInfo(
+    val deviceInfo = PlexDeviceInfo(
         clientIdentifier = authStore.getOrCreateClientIdentifier(),
         platformVersion = Build.VERSION.RELEASE ?: "unknown",
         device = Build.MODEL ?: "Android",
@@ -38,11 +39,14 @@ class AppGraph(context: Context) {
 
     val plexTv = PlexTvApi(client)
 
-    val serverRepository = ServerRepository(client, plexTv, authStore)
+    val serverRepository = ServerRepository(client, plexTv, authStore, deviceInfo)
 
     val titleResolver = TitleResolver(plexTv)
 
     /** Set by SessionViewModel once a server connection is established. */
     @Volatile
     var library: LibraryRepository? = null
+
+    @Volatile
+    var playback: PlaybackRepository? = null
 }
