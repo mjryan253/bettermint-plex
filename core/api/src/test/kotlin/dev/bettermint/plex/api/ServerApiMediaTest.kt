@@ -158,6 +158,33 @@ class ServerApiMediaTest {
     }
 
     @Test
+    fun `createPlayQueue posts a continuous video queue and parses items with pq ids`() = runTest {
+        var method: HttpMethod? = null
+        var url = ""
+        val api = ServerApi(
+            testClient { request ->
+                method = request.method
+                url = request.url.toString()
+                respond(fixture("play_queue.json"), headers = jsonHeaders)
+            },
+            "https://server.example:32400",
+            accessToken = "server-token",
+        )
+        val queue = api.createPlayQueue(machineId = "machine-1", ratingKey = "71936", continuous = true)
+
+        assertEquals(HttpMethod.Post, method)
+        assertTrue(url.contains("/playQueues"))
+        assertTrue(url.contains("type=video"))
+        assertTrue(url.contains("continuous=1"))
+        assertTrue(url.contains("own=1"))
+        assertTrue(url.contains("uri=server%3A%2F%2Fmachine-1%2Fcom.plexapp.plugins.library%2Flibrary%2Fmetadata%2F71936"))
+        assertEquals(2483L, queue.playQueueID)
+        assertEquals(3, queue.items.size)
+        assertEquals(111110L, queue.items.first().playQueueItemID)
+        assertEquals(listOf("Gem Glow", "Laser Light Cannon", "Cheeseburger Backpack"), queue.items.map { it.title })
+    }
+
+    @Test
     fun `addToPlaylist puts the server uri`() = runTest {
         var method: HttpMethod? = null
         var uri: String? = null

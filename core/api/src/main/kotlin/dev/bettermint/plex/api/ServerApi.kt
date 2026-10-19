@@ -8,12 +8,15 @@ import dev.bettermint.plex.api.model.LibrarySection
 import dev.bettermint.plex.api.model.Metadata
 import dev.bettermint.plex.api.model.MetadataContainer
 import dev.bettermint.plex.api.model.MetadataResponse
+import dev.bettermint.plex.api.model.PlayQueue
+import dev.bettermint.plex.api.model.PlayQueueResponse
 import dev.bettermint.plex.api.model.SectionsResponse
 import io.ktor.client.HttpClient
 import io.ktor.client.request.HttpRequestBuilder
 import io.ktor.client.request.get
 import io.ktor.client.request.header
 import io.ktor.client.request.parameter
+import io.ktor.client.request.post
 import io.ktor.client.request.put
 import io.ktor.http.encodeURLQueryComponent
 import io.ktor.http.isSuccess
@@ -67,12 +70,33 @@ class ServerApi(
         get("$baseUrl/library/metadata/$ratingKey") {
             if (includeExtras) parameter("includeExtras", "1")
             parameter("includeChapters", "1")
+            parameter("includeMarkers", "1")
         }.bodyOrThrow<MetadataResponse>().mediaContainer.items.firstOrNull()
 
     /** Seasons of a show, or episodes of a season. */
     suspend fun getChildren(ratingKey: String): List<Metadata> =
         get("$baseUrl/library/metadata/$ratingKey/children")
             .bodyOrThrow<MetadataResponse>().mediaContainer.items
+
+    /**
+     * Build a server play queue for continuous playback. For an episode with
+     * [continuous], the queue includes the following episodes, which powers
+     * autoplay-next. Returns the ordered items, each with a playQueueItemID.
+     */
+    suspend fun createPlayQueue(
+        machineId: String,
+        ratingKey: String,
+        continuous: Boolean = true,
+    ): PlayQueue {
+        val uri = "server://$machineId/com.plexapp.plugins.library/library/metadata/$ratingKey"
+        return client.post("$baseUrl/playQueues") {
+            accessToken?.let { header("X-Plex-Token", it) }
+            parameter("type", "video")
+            parameter("uri", uri)
+            parameter("own", "1")
+            if (continuous) parameter("continuous", "1")
+        }.bodyOrThrow<PlayQueueResponse>().mediaContainer
+    }
 
     suspend fun getCollections(sectionKey: String): List<Metadata> =
         get("$baseUrl/library/sections/$sectionKey/collections")

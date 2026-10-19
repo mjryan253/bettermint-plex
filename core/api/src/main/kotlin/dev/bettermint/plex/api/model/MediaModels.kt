@@ -39,9 +39,20 @@ data class Metadata(
     val grandparentThumb: String? = null,
     val playlistType: String? = null,
     val smart: Boolean? = null,
+    val playQueueItemID: Long? = null,
     @SerialName("Extras") val extras: ExtrasContainer? = null,
     @SerialName("Media") val media: List<MediaVersion> = emptyList(),
     @SerialName("Chapter") val chapters: List<Chapter> = emptyList(),
+    @SerialName("Marker") val markers: List<Marker> = emptyList(),
+)
+
+/** Plex Pass intro/credit markers; type is "intro" or "credits". */
+@Serializable
+data class Marker(
+    val id: Long? = null,
+    val type: String? = null,
+    val startTimeOffset: Long? = null,
+    val endTimeOffset: Long? = null,
 )
 
 /** One playable version of an item (e.g. the 4K file vs the 1080p file). */
@@ -153,5 +164,19 @@ data class Hub(
     val hubIdentifier: String? = null,
     val size: Int = 0,
     val more: Boolean = false,
+    @SerialName("Metadata") val items: List<Metadata> = emptyList(),
+)
+
+/** POST /playQueues result: the ordered items for continuous/autoplay. */
+@Serializable
+data class PlayQueueResponse(
+    @SerialName("MediaContainer") val mediaContainer: PlayQueue,
+)
+
+@Serializable
+data class PlayQueue(
+    val playQueueID: Long? = null,
+    val playQueueSelectedItemID: Long? = null,
+    val size: Int = 0,
     @SerialName("Metadata") val items: List<Metadata> = emptyList(),
 )

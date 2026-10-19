@@ -1,6 +1,18 @@
 package dev.bettermint.plex.app.player
 
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.wrapContentSize
+import androidx.compose.material3.Button
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
@@ -10,8 +22,12 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.media3.common.MediaItem
 import androidx.media3.common.MimeTypes
@@ -19,9 +35,13 @@ import androidx.media3.common.PlaybackException
 import androidx.media3.common.Player
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.ui.PlayerView
+import coil3.compose.AsyncImage
 import dev.bettermint.plex.api.PlaybackDecider.Method
 import dev.bettermint.plex.api.model.Metadata
 import dev.bettermint.plex.app.ui.LoadingScreen
+import dev.bettermint.plex.app.ui.displaySubtitle
+import dev.bettermint.plex.app.ui.displayTitle
+import dev.bettermint.plex.app.ui.posterPath
 import dev.bettermint.plex.data.LibraryRepository
 import dev.bettermint.plex.data.PlaybackRepository
 import kotlinx.coroutines.DelicateCoroutinesApi
@@ -33,10 +53,12 @@ import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
+private const val NEXT_UP_SECONDS = 12
+
 /**
- * Player with a runtime fallback chain: whatever the decider picked, a fatal
- * player error steps down one method (DirectPlay -> DirectStream -> Transcode)
- * until nothing is left.
+ * Plays an item and, at natural end, advances through the server play queue
+ * with a next-up countdown. A fatal player error steps the method down
+ * (DirectPlay -> DirectStream -> Transcode) until nothing is left.
  */
 @Composable
 fun PlayerScreen(
@@ -49,11 +71,23 @@ fun PlayerScreen(
     subtitleStreamId: Long?,
     maxKbpsOverride: Int?,
 ) {
-    val item by produceState<Metadata?>(initialValue = null, ratingKey) {
-        value = runCatching { library.details(ratingKey) }.getOrNull()
+    // The item currently playing. Advances as autoplay moves through the queue;
+    // track/version overrides only apply to the first (user-chosen) item.
+    var currentKey by remember { mutableStateOf(ratingKey) }
+    var currentStartMs by remember { mutableStateOf(startMs) }
+    var currentMediaIndex by remember { mutableStateOf(mediaIndex) }
+    var currentAudioId by remember { mutableStateOf(audioStreamId) }
+    var currentSubId by remember { mutableStateOf(subtitleStreamId) }
+    var forcedMethod by remember(currentKey) { mutableStateOf<Method?>(null) }
+    var exhausted by remember(currentKey) { mutableStateOf(false) }
+    var nextUp by remember { mutableStateOf<Metadata?>(null) }
+
+    val queue by produceState<List<Metadata>>(emptyList(), ratingKey) {
+        value = playback.playQueue(ratingKey)
     }
-    var forcedMethod by remember { mutableStateOf<Method?>(null) }
-    var exhausted by remember { mutableStateOf(false) }
+    val item by produceState<Metadata?>(initialValue = null, currentKey) {
+        value = runCatching { library.details(currentKey) }.getOrNull()
+    }
 
     val loaded = item ?: run {
         LoadingScreen()
@@ -68,17 +102,20 @@ fun PlayerScreen(
         initialValue = null,
         loaded,
         forcedMethod,
+        currentMediaIndex,
+        currentAudioId,
+        currentSubId,
     ) {
-        val selectedSub = loaded.media.getOrNull(mediaIndex)?.parts?.firstOrNull()
-            ?.streams?.firstOrNull { it.id == subtitleStreamId }
+        val selectedSub = loaded.media.getOrNull(currentMediaIndex)?.parts?.firstOrNull()
+            ?.streams?.firstOrNull { it.id == currentSubId }
         value = runCatching {
             playback.source(
                 item = loaded,
-                versionIndex = mediaIndex,
-                startMs = startMs,
+                versionIndex = currentMediaIndex,
+                startMs = currentStartMs,
                 tracks = PlaybackRepository.TrackSelection(
-                    audioStreamId = audioStreamId,
-                    subtitleStreamId = subtitleStreamId,
+                    audioStreamId = currentAudioId,
+                    subtitleStreamId = currentSubId,
                     burnSubtitles = PlaybackRepository.needsBurn(selectedSub),
                 ),
                 overrideMaxKbps = maxKbpsOverride,
@@ -94,10 +131,9 @@ fun PlayerScreen(
 
     val context = LocalContext.current
     val player = remember(active.url) {
-        val selectedSub = loaded.media.getOrNull(mediaIndex)?.parts?.firstOrNull()
-            ?.streams?.firstOrNull { it.id == subtitleStreamId }
+        val selectedSub = loaded.media.getOrNull(currentMediaIndex)?.parts?.firstOrNull()
+            ?.streams?.firstOrNull { it.id == currentSubId }
         val mediaItem = MediaItem.Builder().setUri(active.url).apply {
-            // External text subtitle sidecars ride along during direct play.
             if (active.method == Method.DirectPlay && selectedSub?.key != null) {
                 val subUrl = library.api.directPlayUrl(selectedSub.key!!)
                 val mime = when (selectedSub.codec?.lowercase()) {
@@ -123,21 +159,24 @@ fun PlayerScreen(
                     val next = PlaybackRepository.fallbackAfter(active.method)
                     if (next != null) forcedMethod = next else exhausted = true
                 }
+
+                override fun onPlaybackStateChanged(state: Int) {
+                    if (state == Player.STATE_ENDED) {
+                        nextUp = PlaybackRepository.nextInQueue(queue, currentKey)
+                    }
+                }
             })
             prepare()
             if (active.seekToMs > 0) seekTo(active.seekToMs)
             playWhenReady = true
         }
     }
-    // Report progress every 10s while playing, plus on pause, and scrobble once
-    // past the watched threshold. The server uses this for Continue Watching,
-    // resume offsets, and to show our session in /status/sessions.
-    LaunchedEffect(player, loaded.ratingKey) {
-        val ratingKey = loaded.ratingKey ?: return@LaunchedEffect
+
+    val playQueueItemId = queue.firstOrNull { it.ratingKey == currentKey }?.playQueueItemID
+
+    LaunchedEffect(player, currentKey) {
+        val key = loaded.ratingKey ?: return@LaunchedEffect
         var scrobbled = false
-        // Last position read while the player was alive. The stopped ping uses
-        // this instead of reading the player, which DisposableEffect may have
-        // already released during composable teardown.
         var lastPos = active.seekToMs
         var lastDur = loaded.duration ?: 0L
         try {
@@ -147,16 +186,16 @@ fun PlayerScreen(
                 }
                 lastPos = pos
                 if (dur > 0) lastDur = dur
-                playback.reportProgress(ratingKey, if (playing) "playing" else "paused", pos, lastDur)
+                playback.reportProgress(key, if (playing) "playing" else "paused", pos, lastDur, playQueueItemId)
                 if (!scrobbled && PlaybackRepository.isWatched(pos, lastDur)) {
                     scrobbled = true
-                    playback.markWatched(ratingKey)
+                    playback.markWatched(key)
                 }
                 delay(10_000)
             }
         } finally {
             withContext(NonCancellable) {
-                runCatching { playback.reportProgress(ratingKey, "stopped", lastPos, lastDur) }
+                runCatching { playback.reportProgress(key, "stopped", lastPos, lastDur, playQueueItemId) }
             }
         }
     }
@@ -164,8 +203,6 @@ fun PlayerScreen(
     DisposableEffect(player) {
         onDispose {
             player.release()
-            // Fire-and-forget: the composable's scope is gone by now and a
-            // blocking network call here would freeze the main thread.
             @OptIn(DelicateCoroutinesApi::class)
             GlobalScope.launch(Dispatchers.IO) { runCatching { playback.stop(active) } }
         }
@@ -184,4 +221,65 @@ fun PlayerScreen(
         update = { view -> view.player = player },
         modifier = Modifier.fillMaxSize(),
     )
+
+    fun advanceTo(next: Metadata) {
+        currentKey = next.ratingKey ?: return
+        currentStartMs = 0
+        currentMediaIndex = 0
+        currentAudioId = null
+        currentSubId = null
+        nextUp = null
+    }
+
+    nextUp?.let { next ->
+        NextUpOverlay(
+            next = next,
+            library = library,
+            onPlayNow = { advanceTo(next) },
+            onCancel = { nextUp = null },
+        )
+    }
+}
+
+@Composable
+private fun NextUpOverlay(
+    next: Metadata,
+    library: LibraryRepository,
+    onPlayNow: () -> Unit,
+    onCancel: () -> Unit,
+) {
+    var seconds by remember(next.ratingKey) { mutableStateOf(NEXT_UP_SECONDS) }
+    LaunchedEffect(next.ratingKey) {
+        while (seconds > 0) {
+            delay(1000)
+            seconds -= 1
+        }
+        onPlayNow()
+    }
+
+    Column(
+        modifier = Modifier.fillMaxSize().background(Color(0xCC000000)).padding(48.dp),
+        verticalArrangement = Arrangement.Center,
+        horizontalAlignment = Alignment.CenterHorizontally,
+    ) {
+        Text("Up next in ${seconds}s", style = MaterialTheme.typography.titleMedium)
+        Spacer(Modifier.height(16.dp))
+        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+            AsyncImage(
+                model = library.imageUrl(next.posterPath(), 200, 300),
+                contentDescription = null,
+                contentScale = ContentScale.Crop,
+                modifier = Modifier.width(100.dp).height(150.dp),
+            )
+            Column {
+                Text(next.displayTitle(), style = MaterialTheme.typography.headlineSmall)
+                next.displaySubtitle()?.let { Text(it, style = MaterialTheme.typography.bodyMedium) }
+            }
+        }
+        Spacer(Modifier.height(24.dp))
+        Row(horizontalArrangement = Arrangement.spacedBy(12.dp), modifier = Modifier.wrapContentSize()) {
+            Button(onClick = onPlayNow) { Text("Play now") }
+            OutlinedButton(onClick = onCancel) { Text("Cancel") }
+        }
+    }
 }

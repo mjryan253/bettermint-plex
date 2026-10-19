@@ -1,0 +1,37 @@
+{
+  "MediaContainer": {
+    "size": 3,
+    "playQueueID": 2483,
+    "playQueueSelectedItemID": 111110,
+    "playQueueSelectedMetadataItemID": "71936",
+    "Metadata": [
+      {
+        "ratingKey": "71936",
+        "playQueueItemID": 111110,
+        "type": "episode",
+        "title": "Gem Glow",
+        "index": 1,
+        "parentIndex": 1,
+        "grandparentTitle": "Steven Universe"
+      },
+      {
+        "ratingKey": "71937",
+        "playQueueItemID": 111111,
+        "type": "episode",
+        "title": "Laser Light Cannon",
+        "index": 2,
+        "parentIndex": 1,
+        "grandparentTitle": "Steven Universe"
+      },
+      {
+        "ratingKey": "71938",
+        "playQueueItemID": 111112,
+        "type": "episode",
+        "title": "Cheeseburger Backpack",
+        "index": 3,
+        "parentIndex": 1,
+        "grandparentTitle": "Steven Universe"
+      }
+    ]
+  }
+}

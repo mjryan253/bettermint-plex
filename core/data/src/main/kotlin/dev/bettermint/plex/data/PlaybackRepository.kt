@@ -88,7 +88,19 @@ class PlaybackRepository(
 
     suspend fun markWatched(ratingKey: String) = api.scrobble(ratingKey)
 
+    /** Continuous play queue for autoplay-next, or null if unavailable. */
+    suspend fun playQueue(ratingKey: String): List<Metadata> {
+        val machineId = authStore.selectedServer()?.machineId ?: return emptyList()
+        return runCatching { api.createPlayQueue(machineId, ratingKey).items }.getOrDefault(emptyList())
+    }
+
     companion object {
+        /** The item that follows [afterRatingKey] in the queue, or null at the end. */
+        fun nextInQueue(items: List<Metadata>, afterRatingKey: String): Metadata? {
+            val index = items.indexOfFirst { it.ratingKey == afterRatingKey }
+            return items.getOrNull(index + 1)?.takeIf { index >= 0 }
+        }
+
         const val WATCHED_FRACTION = 0.9
 
         /** True once playback has passed the watched threshold. */

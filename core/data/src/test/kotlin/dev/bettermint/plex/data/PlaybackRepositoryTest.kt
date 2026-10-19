@@ -32,6 +32,20 @@ class PlaybackRepositoryTest {
     }
 
     @Test
+    fun `nextInQueue returns the following item, or null at the end`() {
+        val items = listOf(
+            dev.bettermint.plex.api.model.Metadata(ratingKey = "1", title = "A"),
+            dev.bettermint.plex.api.model.Metadata(ratingKey = "2", title = "B"),
+            dev.bettermint.plex.api.model.Metadata(ratingKey = "3", title = "C"),
+        )
+        assertEquals("B", PlaybackRepository.nextInQueue(items, "1")?.title)
+        assertEquals("C", PlaybackRepository.nextInQueue(items, "2")?.title)
+        assertNull("last item has no next", PlaybackRepository.nextInQueue(items, "3"))
+        assertNull("unknown key has no next", PlaybackRepository.nextInQueue(items, "999"))
+        assertNull(PlaybackRepository.nextInQueue(emptyList(), "1"))
+    }
+
+    @Test
     fun `isWatched triggers at ninety percent`() {
         assertFalse(PlaybackRepository.isWatched(timeMs = 0, durationMs = 1000))
         assertFalse(PlaybackRepository.isWatched(timeMs = 899, durationMs = 1000))
