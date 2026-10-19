@@ -162,7 +162,9 @@ fun PlayerScreen(
                 }
 
                 override fun onPlaybackStateChanged(state: Int) {
-                    if (state == Player.STATE_ENDED) {
+                    // Only advance from the item this player was built for, so a
+                    // late STATE_ENDED from the previous item cannot skip ahead.
+                    if (state == Player.STATE_ENDED && loaded.ratingKey == currentKey) {
                         nextUp = PlaybackRepository.nextInQueue(queue, currentKey)
                     }
                 }
@@ -207,6 +209,14 @@ fun PlayerScreen(
     LaunchedEffect(player, currentKey, loaded.markers) {
         val markers = loaded.markers
         while (isActive) {
+            // During an autoplay advance, currentKey moves to the next item
+            // before its details/player load, so the player here may still be
+            // the previous item sitting in its credits. Only act when the loaded
+            // item is the current target, or we would prompt the wrong next-up.
+            if (loaded.ratingKey != currentKey) {
+                delay(750)
+                continue
+            }
             val pos = withContext(Dispatchers.Main) { player.currentPosition }
             skipTarget = PlaybackRepository.markerAt(markers, "intro", pos)?.endTimeOffset
             if (nextUp == null && PlaybackRepository.markerAt(markers, "credits", pos) != null) {
