@@ -5,6 +5,10 @@ import io.ktor.client.engine.HttpClientEngine
 import io.ktor.client.engine.okhttp.OkHttp
 import io.ktor.client.plugins.api.createClientPlugin
 import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
+import io.ktor.client.plugins.logging.LogLevel
+import io.ktor.client.plugins.logging.Logger
+import io.ktor.client.plugins.logging.Logging
+import io.ktor.client.plugins.logging.SIMPLE
 import io.ktor.http.HttpHeaders
 import io.ktor.serialization.kotlinx.json.json
 import kotlinx.serialization.json.Json
@@ -26,6 +30,7 @@ object PlexClient {
         deviceInfo: PlexDeviceInfo,
         tokenProvider: () -> String?,
         engine: HttpClientEngine? = null,
+        logging: Boolean = false,
     ): HttpClient {
         val plexHeaders = createClientPlugin("PlexHeaders") {
             onRequest { request, _ ->
@@ -51,6 +56,14 @@ object PlexClient {
                 json(this@PlexClient.json)
             }
             install(plexHeaders)
+            if (logging) {
+                // INFO logs method, URL and status only. Never raise to HEADERS/ALL:
+                // that would leak X-Plex-Token into logcat.
+                install(Logging) {
+                    logger = Logger.SIMPLE
+                    level = LogLevel.INFO
+                }
+            }
         }
         return if (engine != null) HttpClient(engine, config) else HttpClient(OkHttp, config)
     }

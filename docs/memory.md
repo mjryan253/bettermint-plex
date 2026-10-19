@@ -34,7 +34,7 @@ Full approved plan: `~/.claude/plans/https-github-com-morluto-rea-use-the-rea-ti
 
 ## Status
 
-- **Milestone**: M0 COMPLETE. M1 (auth + server connect + Plex Home) CODE COMPLETE and deployed; awaiting the user's plex.tv/link sign-in to verify the live flow.
+- **Milestone**: M1 COMPLETE (2026-10-19, verified live on Basement TV). Next: M2 (browse/search/details + collections/playlists/extras), then HITL Gate A.
 - M1 built so far (all committed, JVM tests green):
   - `:core:api`: PlexClient (Ktor + per-request X-Plex header plugin, token override per request), PlexTvApi (createPin non-strong / getPin poll / getUser token check / getResources / getHomeUsers / switchHomeUser), ServerApi (getIdentity, getLibrarySections), ConnectionSelector (parallel probe, local > remote > relay, latency tiebreak), DTOs, PlexApiException.
   - `:core:data`: AuthStore (DataStore: client id, account token, selected server), ServerRepository (listServers, connect + persist best connection, cachedServer).
@@ -59,3 +59,4 @@ Full approved plan: `~/.claude/plans/https-github-com-morluto-rea-use-the-rea-ti
 - **2026-10-18** — M0 complete: build verified on host (test + assembleDebug green); hello APK deployed to Fire TV Stick 4K (AFTMM, Fire OS 6) via host adb, TV form factor + leanback launcher confirmed by screenshot. SDK gotchas documented above.
 - **2026-10-18** - M1 code complete: Plex API layer with header plugin and fixture tests; AuthStore/ServerRepository; session state machine with sign-in, server picker, libraries and Plex Home screens; deployed to Fire Stick, waiting on user's plex.tv/link entry. Fixed strong-pin bug (manual entry needs non-strong 4-char codes). CLAUDE.md updated by user: no em dashes ever (non-numerical).
 - **2026-10-19** - Basement TV stick (192.168.1.125:5555, AFTMM) authorized and made primary test device; app installed there, sign-in screen live. New gate recorded: rigorous-but-simple test suite after MVP completion, before optional/v2 features.
+- **2026-10-19** - M1 verified live on Basement TV (192.168.1.125): PIN sign-in, server picker listed "thegremlin", connection racing picked local URI (logcat-confirmed: 3 parallel /identity probes, local chosen), libraries listed, session survives cold restart, home-user switch POST returned 201 and reconnected. Added Ktor request logging (INFO level only; HEADERS/ALL would leak X-Plex-Token) gated on BuildConfig.DEBUG. DTO fixtures validated by live parsing. Known UX gap for M6: no visible focus indicator on plain Material3 cards.

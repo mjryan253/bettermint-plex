@@ -2,6 +2,7 @@ package dev.bettermint.plex.app
 
 import android.content.Context
 import android.os.Build
+import dev.bettermint.plex.BuildConfig
 import dev.bettermint.plex.api.PlexClient
 import dev.bettermint.plex.api.PlexDeviceInfo
 import dev.bettermint.plex.api.PlexTvApi
@@ -27,7 +28,11 @@ class AppGraph(context: Context) {
         deviceName = "Bettermint on ${Build.MODEL ?: "Android"}",
     )
 
-    val client = PlexClient.create(deviceInfo, tokenProvider = { accountToken })
+    val client = PlexClient.create(
+        deviceInfo,
+        tokenProvider = { accountToken },
+        logging = BuildConfig.DEBUG,
+    )
 
     val plexTv = PlexTvApi(client)
 
