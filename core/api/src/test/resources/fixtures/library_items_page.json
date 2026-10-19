@@ -1,0 +1,42 @@
+{
+  "MediaContainer": {
+    "size": 2,
+    "totalSize": 1234,
+    "offset": 40,
+    "allowSync": true,
+    "art": "/:/resources/movie-fanart.jpg",
+    "librarySectionID": 1,
+    "librarySectionTitle": "Movies",
+    "Metadata": [
+      {
+        "ratingKey": "101",
+        "key": "/library/metadata/101",
+        "guid": "plex://movie/5d776834999c64001ec2c2b3",
+        "type": "movie",
+        "title": "Example Movie",
+        "summary": "A film about examples.",
+        "year": 1994,
+        "thumb": "/library/metadata/101/thumb/1700000000",
+        "art": "/library/metadata/101/art/1700000000",
+        "duration": 7260000,
+        "contentRating": "PG-13",
+        "rating": 7.4,
+        "audienceRating": 8.1,
+        "viewCount": 1,
+        "addedAt": 1600000000,
+        "originallyAvailableAt": "1994-06-10"
+      },
+      {
+        "ratingKey": "102",
+        "key": "/library/metadata/102",
+        "type": "movie",
+        "title": "Unwatched Movie",
+        "year": 2021,
+        "thumb": "/library/metadata/102/thumb/1700000001",
+        "duration": 5400000,
+        "viewOffset": 1200000,
+        "addedAt": 1700000000
+      }
+    ]
+  }
+}

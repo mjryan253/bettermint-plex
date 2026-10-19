@@ -1,0 +1,55 @@
+{
+  "MediaContainer": {
+    "size": 2,
+    "allowSync": false,
+    "Hub": [
+      {
+        "hubKey": "/library/metadata/201",
+        "key": "/hubs/home/continueWatching",
+        "title": "Continue Watching",
+        "type": "mixed",
+        "hubIdentifier": "home.continue",
+        "context": "hub.home.continue",
+        "size": 1,
+        "more": false,
+        "style": "shelf",
+        "Metadata": [
+          {
+            "ratingKey": "201",
+            "key": "/library/metadata/201",
+            "type": "episode",
+            "title": "Pilot",
+            "index": 1,
+            "parentIndex": 1,
+            "parentRatingKey": "200",
+            "parentTitle": "Season 1",
+            "grandparentRatingKey": "199",
+            "grandparentTitle": "Example Show",
+            "grandparentThumb": "/library/metadata/199/thumb/1700000000",
+            "thumb": "/library/metadata/201/thumb/1700000000",
+            "duration": 2700000,
+            "viewOffset": 900000
+          }
+        ]
+      },
+      {
+        "key": "/hubs/home/recentlyAdded",
+        "title": "Recently Added",
+        "type": "movie",
+        "hubIdentifier": "home.recent",
+        "size": 1,
+        "more": true,
+        "Metadata": [
+          {
+            "ratingKey": "102",
+            "key": "/library/metadata/102",
+            "type": "movie",
+            "title": "Unwatched Movie",
+            "year": 2021,
+            "thumb": "/library/metadata/102/thumb/1700000001"
+          }
+        ]
+      }
+    ]
+  }
+}

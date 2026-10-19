@@ -1,0 +1,17 @@
+{
+  "MediaContainer": {
+    "size": 1,
+    "Metadata": [
+      {
+        "ratingKey": "501",
+        "key": "/library/collections/501/children",
+        "type": "collection",
+        "title": "James Bond",
+        "summary": "All Bond films.",
+        "thumb": "/library/collections/501/composite/1700000000",
+        "childCount": 25,
+        "smart": false
+      }
+    ]
+  }
+}

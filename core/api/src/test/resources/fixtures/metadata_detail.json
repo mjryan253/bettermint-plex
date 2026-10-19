@@ -1,0 +1,36 @@
+{
+  "MediaContainer": {
+    "size": 1,
+    "allowSync": true,
+    "librarySectionID": 1,
+    "Metadata": [
+      {
+        "ratingKey": "101",
+        "key": "/library/metadata/101",
+        "type": "movie",
+        "title": "Example Movie",
+        "summary": "A film about examples.",
+        "year": 1994,
+        "thumb": "/library/metadata/101/thumb/1700000000",
+        "art": "/library/metadata/101/art/1700000000",
+        "duration": 7260000,
+        "contentRating": "PG-13",
+        "rating": 7.4,
+        "audienceRating": 8.1,
+        "Extras": {
+          "size": 1,
+          "Metadata": [
+            {
+              "ratingKey": "9001",
+              "key": "/library/metadata/9001",
+              "type": "clip",
+              "title": "Example Movie Trailer",
+              "duration": 150000,
+              "thumb": "/library/metadata/9001/thumb/1700000000"
+            }
+          ]
+        }
+      }
+    ]
+  }
+}

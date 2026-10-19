@@ -1,0 +1,32 @@
+{
+  "MediaContainer": {
+    "size": 2,
+    "key": "199",
+    "parentTitle": "Example Show",
+    "Metadata": [
+      {
+        "ratingKey": "200",
+        "key": "/library/metadata/200/children",
+        "type": "season",
+        "title": "Season 1",
+        "index": 1,
+        "parentRatingKey": "199",
+        "parentTitle": "Example Show",
+        "thumb": "/library/metadata/200/thumb/1700000000",
+        "leafCount": 10,
+        "viewedLeafCount": 3
+      },
+      {
+        "ratingKey": "300",
+        "key": "/library/metadata/300/children",
+        "type": "season",
+        "title": "Season 2",
+        "index": 2,
+        "parentRatingKey": "199",
+        "parentTitle": "Example Show",
+        "leafCount": 8,
+        "viewedLeafCount": 0
+      }
+    ]
+  }
+}

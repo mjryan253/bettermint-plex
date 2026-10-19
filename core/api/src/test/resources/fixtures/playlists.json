@@ -1,0 +1,18 @@
+{
+  "MediaContainer": {
+    "size": 1,
+    "Metadata": [
+      {
+        "ratingKey": "601",
+        "key": "/playlists/601/items",
+        "type": "playlist",
+        "title": "Movie Night",
+        "summary": "",
+        "playlistType": "video",
+        "smart": false,
+        "duration": 14520000,
+        "leafCount": 2
+      }
+    ]
+  }
+}
