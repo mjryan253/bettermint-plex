@@ -115,7 +115,7 @@ fun PlayerScreen(
             setMediaItem(mediaItem)
             addListener(object : Player.Listener {
                 override fun onPlayerError(error: PlaybackException) {
-                    val next = playback.fallbackAfter(active.method)
+                    val next = PlaybackRepository.fallbackAfter(active.method)
                     if (next != null) forcedMethod = next else exhausted = true
                 }
             })

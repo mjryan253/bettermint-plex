@@ -1,0 +1,99 @@
+{
+  "MediaContainer": {
+    "size": 1,
+    "Metadata": [
+      {
+        "ratingKey": "555",
+        "key": "/library/metadata/555",
+        "type": "movie",
+        "title": "Streamy Movie",
+        "year": 2020,
+        "viewOffset": 300000,
+        "Media": [
+          {
+            "id": 7001,
+            "videoResolution": "1080",
+            "videoCodec": "h264",
+            "audioCodec": "dca",
+            "container": "mkv",
+            "Part": [
+              {
+                "id": 7101,
+                "key": "/library/parts/7101/file.mkv",
+                "container": "mkv",
+                "Stream": [
+                  {
+                    "id": 801,
+                    "streamType": 1,
+                    "codec": "h264",
+                    "index": 0,
+                    "displayTitle": "1080p (H.264)"
+                  },
+                  {
+                    "id": 802,
+                    "streamType": 2,
+                    "codec": "dca",
+                    "index": 1,
+                    "channels": 6,
+                    "language": "English",
+                    "languageTag": "en",
+                    "selected": true,
+                    "displayTitle": "English (DTS 5.1)",
+                    "extendedDisplayTitle": "English (DTS 5.1)"
+                  },
+                  {
+                    "id": 803,
+                    "streamType": 2,
+                    "codec": "aac",
+                    "index": 2,
+                    "channels": 2,
+                    "language": "Spanish",
+                    "languageTag": "es",
+                    "displayTitle": "Spanish (AAC Stereo)"
+                  },
+                  {
+                    "id": 804,
+                    "streamType": 3,
+                    "codec": "srt",
+                    "index": 3,
+                    "language": "English",
+                    "languageTag": "en",
+                    "key": "/library/streams/804",
+                    "displayTitle": "English (SRT External)"
+                  },
+                  {
+                    "id": 805,
+                    "streamType": 3,
+                    "codec": "ass",
+                    "index": 4,
+                    "language": "Japanese",
+                    "forced": false,
+                    "displayTitle": "Japanese (ASS)"
+                  }
+                ]
+              }
+            ]
+          }
+        ],
+        "Chapter": [
+          {
+            "id": 9101,
+            "index": 1,
+            "tag": "Opening",
+            "startTimeOffset": 0,
+            "endTimeOffset": 600000,
+            "thumb": "/library/metadata/555/chapterImages/1"
+          },
+          {
+            "id": 9102,
+            "index": 2,
+            "tag": "The Reveal",
+            "startTimeOffset": 600000,
+            "endTimeOffset": 1800000,
+            "thumb": "/library/metadata/555/chapterImages/2"
+          }
+        ]
+      }
+    ]
+  }
+}

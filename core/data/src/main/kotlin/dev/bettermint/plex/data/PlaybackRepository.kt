@@ -46,8 +46,7 @@ class PlaybackRepository(
 
         val quality = authStore.qualityPrefs()
         val local = authStore.selectedServer()?.localConnection != false
-        val prefCap = if (local) quality.maxKbpsLocal else quality.maxKbpsRemote
-        val cap = (overrideMaxKbps ?: prefCap).takeIf { it > 0 }
+        val cap = resolveCap(overrideMaxKbps, quality.maxKbpsLocal, quality.maxKbpsRemote, local)
 
         val method = forceMethod ?: PlaybackDecider.decide(version, caps, cap, tracks.burnSubtitles)
 
@@ -75,18 +74,28 @@ class PlaybackRepository(
         }
     }
 
-    /** Next method to try after [failed], or null when nothing is left. */
-    fun fallbackAfter(failed: Method): Method? = when (failed) {
-        Method.DirectPlay -> Method.DirectStream
-        Method.DirectStream -> Method.Transcode
-        Method.Transcode -> null
-    }
-
     suspend fun stop(source: Source) {
         source.sessionId?.let { api.stopTranscode(it) }
     }
 
     companion object {
+        /** Next method to try after [failed], or null when nothing is left. */
+        fun fallbackAfter(failed: Method): Method? = when (failed) {
+            Method.DirectPlay -> Method.DirectStream
+            Method.DirectStream -> Method.Transcode
+            Method.Transcode -> null
+        }
+
+        /**
+         * Effective video bitrate cap in kbps, or null for original quality.
+         * An explicit per-play override wins; otherwise the local or remote
+         * preset applies by connection. 0 in any of these means "no cap".
+         */
+        fun resolveCap(overrideKbps: Int?, localPrefKbps: Int, remotePrefKbps: Int, isLocal: Boolean): Int? {
+            val prefCap = if (isLocal) localPrefKbps else remotePrefKbps
+            return (overrideKbps ?: prefCap).takeIf { it > 0 }
+        }
+
         /** Subtitle formats Media3 renders during direct play; others burn in. */
         private val renderableSubtitles = setOf("srt", "subrip", "ass", "ssa", "vtt", "webvtt", "pgs", "hdmv_pgs_subtitle", "mov_text", "tx3g")
 
