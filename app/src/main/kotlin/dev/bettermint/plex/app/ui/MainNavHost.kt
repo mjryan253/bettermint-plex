@@ -1,10 +1,17 @@
 package dev.bettermint.plex.app.ui
 
 import android.net.Uri
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
+import androidx.compose.ui.Modifier
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
+import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import dev.bettermint.plex.app.SessionState
 import dev.bettermint.plex.app.SessionViewModel
@@ -67,6 +74,65 @@ fun MainNavHost(
         }
     }
 
+    // webOS bottom pill bar on top-level destinations; hidden in detail/player.
+    val tabs = remember(ready.libraries) {
+        buildList {
+            add(TabSpec(Routes.HOME, "Home"))
+            ready.libraries.filter { it.type == "movie" || it.type == "show" }.forEach { section ->
+                add(TabSpec("lib/${section.key}", section.title))
+            }
+            add(TabSpec(Routes.PLAYLISTS, "Playlists"))
+            add(TabSpec(Routes.SEARCH, "Search"))
+            add(TabSpec(Routes.SETTINGS, "Settings"))
+        }
+    }
+    val backStackEntry by nav.currentBackStackEntryAsState()
+    val route = backStackEntry?.destination?.route.orEmpty()
+    val selectedTabId = when {
+        route == Routes.HOME -> Routes.HOME
+        route.startsWith("library/") -> "lib/" + (backStackEntry?.arguments?.getString("key").orEmpty())
+        route == Routes.SEARCH -> Routes.SEARCH
+        route == Routes.PLAYLISTS -> Routes.PLAYLISTS
+        route == Routes.SETTINGS -> Routes.SETTINGS
+        else -> null
+    }
+    val showBar = selectedTabId != null
+
+    Column(modifier = Modifier.fillMaxSize()) {
+        Box(modifier = Modifier.weight(1f)) {
+            MainNavGraph(nav, library, ready, sessionViewModel)
+        }
+        if (showBar) {
+            WebOsTabBar(
+                tabs = tabs,
+                selectedId = selectedTabId,
+                onSelect = { tab ->
+                    val target = when {
+                        tab.id == Routes.HOME -> Routes.HOME
+                        tab.id.startsWith("lib/") -> {
+                            val key = tab.id.removePrefix("lib/")
+                            Routes.library(key, tabs.first { it.id == tab.id }.label)
+                        }
+                        else -> tab.id
+                    }
+                    nav.navigate(target) {
+                        popUpTo(Routes.HOME) { saveState = true }
+                        launchSingleTop = true
+                        restoreState = true
+                    }
+                },
+            )
+        }
+    }
+}
+
+@Composable
+private fun MainNavGraph(
+    nav: NavHostController,
+    library: LibraryRepository,
+    ready: SessionState.Ready,
+    sessionViewModel: SessionViewModel,
+) {
     NavHost(navController = nav, startDestination = Routes.HOME) {
         composable(Routes.HOME) {
             HomeScreen(library, ready, sessionViewModel, nav)

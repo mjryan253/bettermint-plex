@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.material3.AssistChip
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.MaterialTheme
@@ -50,43 +51,29 @@ fun HomeScreen(
         verticalArrangement = Arrangement.spacedBy(16.dp),
     ) {
         item {
-            Spacer(Modifier.height(8.dp))
-            Text(ready.serverName, style = MaterialTheme.typography.headlineMedium)
+            Spacer(Modifier.height(10.dp))
+            WebOsHeaderPill(ready.serverName)
             if (ready.switchError != null) {
                 Text(ready.switchError, color = MaterialTheme.colorScheme.error)
             }
         }
 
-        item {
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                ready.libraries.filter { it.type == "movie" || it.type == "show" }.forEachIndexed { index, section ->
-                    AssistChip(
-                        onClick = { nav.navigate(Routes.library(section.key, section.title)) },
-                        label = { Text(section.title) },
-                        modifier = if (index == 0) Modifier.initialFocus() else Modifier,
-                    )
-                }
-                AssistChip(onClick = { nav.navigate(Routes.SEARCH) }, label = { Text("Search") })
-                AssistChip(onClick = { nav.navigate(Routes.PLAYLISTS) }, label = { Text("Playlists") })
-                AssistChip(onClick = { nav.navigate(Routes.SETTINGS) }, label = { Text("Settings") })
-            }
-        }
-
         when (val loaded = hubs) {
-            null -> item { Text("Loading hubs...") }
-            else -> items(loaded, key = { it.hubIdentifier ?: it.title }) { hub ->
+            null -> item { Text("Loading your library...") }
+            else -> itemsIndexed(loaded, key = { _, h -> h.hubIdentifier ?: h.title }) { hubIndex, hub ->
                 Column {
-                    Text(hub.title, style = MaterialTheme.typography.titleMedium)
-                    Spacer(Modifier.height(8.dp))
+                    SectionHeader(hub.title)
+                    Spacer(Modifier.height(10.dp))
                     LazyRow(
                         horizontalArrangement = Arrangement.spacedBy(12.dp),
                         modifier = Modifier.focusRestorer(),
                     ) {
-                        items(hub.items, key = { it.ratingKey ?: it.title }) { item ->
+                        itemsIndexed(hub.items, key = { _, it -> it.ratingKey ?: it.title }) { index, item ->
                             PosterCard(
                                 item = item,
                                 library = library,
                                 onClick = { nav.navigate(Routes.details(item.ratingKey.orEmpty())) },
+                                modifier = if (hubIndex == 0 && index == 0) Modifier.initialFocus() else Modifier,
                             )
                         }
                     }
@@ -97,7 +84,7 @@ fun HomeScreen(
         if (ready.homeUsers.size > 1) {
             item {
                 Column {
-                    Text("Switch user", style = MaterialTheme.typography.titleMedium)
+                    SectionHeader("Switch user")
                     Spacer(Modifier.height(8.dp))
                     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                         ready.homeUsers.forEach { user ->

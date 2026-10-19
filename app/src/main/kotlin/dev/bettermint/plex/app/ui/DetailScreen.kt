@@ -10,17 +10,17 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.AssistChip
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.FilterChip
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -32,11 +32,13 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavHostController
 import coil3.compose.AsyncImage
 import dev.bettermint.plex.api.model.Metadata
+import dev.bettermint.plex.app.ui.theme.LocalWebOsPalette
 import dev.bettermint.plex.data.LibraryRepository
 import kotlinx.coroutines.launch
 
@@ -91,116 +93,147 @@ fun DetailScreen(
     var subId by remember(ratingKey) { mutableStateOf<Long?>(null) }
     var qualityOverride by remember(ratingKey) { mutableStateOf<Int?>(null) }
 
+    val palette = LocalWebOsPalette.current
+
+    BlurBackdrop(
+        imageUrl = library.imageUrl(item.art ?: item.posterPath(), 64, 36),
+        modifier = Modifier.fillMaxSize(),
+    )
+
     LazyColumn(
         Modifier.fillMaxSize().padding(horizontal = 24.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp),
     ) {
         item {
-            Spacer(Modifier.height(8.dp))
-            Row(horizontalArrangement = Arrangement.spacedBy(24.dp)) {
-                AsyncImage(
-                    model = library.imageUrl(item.posterPath(), POSTER_WIDTH_DP * 2, POSTER_HEIGHT_DP * 2),
-                    contentDescription = null,
-                    contentScale = ContentScale.Crop,
-                    modifier = Modifier.width(POSTER_WIDTH_DP.dp).height(POSTER_HEIGHT_DP.dp),
-                )
-                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Text(item.displayTitle(), style = MaterialTheme.typography.headlineMedium)
-                    item.displaySubtitle()?.let { Text(it, style = MaterialTheme.typography.titleMedium) }
-                    Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                        item.contentRating?.let { Text(it) }
-                        item.rating?.let { Text("Critics $it") }
-                        item.audienceRating?.let { Text("Audience $it") }
-                        item.duration?.let { Text("${it / 60000} min") }
-                    }
-                    item.summary?.takeIf { it.isNotBlank() }?.let {
-                        Text(it, style = MaterialTheme.typography.bodyMedium, maxLines = 6)
-                    }
-                    if (item.media.isNotEmpty()) {
-                        if (item.media.size > 1) {
-                            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                                item.media.forEachIndexed { index, version ->
-                                    FilterChip(
-                                        selected = index == versionIndex,
-                                        onClick = { versionIndex = index },
-                                        label = { Text(version.label) },
-                                    )
-                                }
-                            }
+            Spacer(Modifier.height(14.dp))
+            // The webOS card: content floats on a warm linen surface over the
+            // dimmed artwork, like an app card over the wallpaper.
+            Surface(
+                color = palette.linen,
+                contentColor = palette.onLinen,
+                shape = MaterialTheme.shapes.extraLarge,
+                shadowElevation = 12.dp,
+            ) {
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(24.dp),
+                    modifier = Modifier.padding(20.dp),
+                ) {
+                    AsyncImage(
+                        model = library.imageUrl(item.posterPath(), POSTER_WIDTH_DP * 2, POSTER_HEIGHT_DP * 2),
+                        contentDescription = null,
+                        contentScale = ContentScale.Crop,
+                        modifier = Modifier
+                            .width(POSTER_WIDTH_DP.dp)
+                            .height(POSTER_HEIGHT_DP.dp)
+                            .clip(MaterialTheme.shapes.medium),
+                    )
+                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Text(item.displayTitle(), style = MaterialTheme.typography.headlineSmall)
+                        item.displaySubtitle()?.let {
+                            Text(it, style = MaterialTheme.typography.bodyMedium, color = palette.graphite)
                         }
-                        val streams = item.media.getOrNull(versionIndex)?.parts?.firstOrNull()
-                            ?.streams.orEmpty()
-                        val audioTracks = streams.filter { it.isAudio }
-                        val subtitleTracks = streams.filter { it.isSubtitle }
-                        if (audioTracks.size > 1) {
-                            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                                audioTracks.forEach { track ->
-                                    FilterChip(
-                                        selected = audioId == track.id || (audioId == null && track.selected),
-                                        onClick = { audioId = track.id },
-                                        label = { Text(track.label) },
-                                    )
-                                }
-                            }
-                        }
-                        if (subtitleTracks.isNotEmpty()) {
-                            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                                FilterChip(
-                                    selected = subId == null,
-                                    onClick = { subId = null },
-                                    label = { Text("No subtitles") },
-                                )
-                                subtitleTracks.forEach { track ->
-                                    FilterChip(
-                                        selected = subId == track.id,
-                                        onClick = { subId = track.id },
-                                        label = { Text(track.label) },
-                                    )
-                                }
-                            }
-                        }
-                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                            listOf(null, 8000, 4000, 2000).forEach { kbps ->
-                                FilterChip(
-                                    selected = qualityOverride == kbps,
-                                    onClick = { qualityOverride = kbps },
-                                    label = { Text(if (kbps == null) "Auto quality" else "${kbps / 1000} Mbps") },
-                                )
-                            }
-                        }
-                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                            val resumeMs = item.viewOffset ?: 0L
-                            fun play(startMs: Long) = nav.navigate(
-                                Routes.player(
-                                    item.ratingKey.orEmpty(),
-                                    versionIndex,
-                                    startMs,
-                                    audioId = audioId,
-                                    subId = subId,
-                                    maxKbps = qualityOverride,
-                                ),
+                        Row(horizontalArrangement = Arrangement.spacedBy(14.dp)) {
+                            val meta = listOfNotNull(
+                                item.contentRating,
+                                item.duration?.let { "${it / 60000} min" },
+                                item.rating?.let { "Critics $it" },
+                                item.audienceRating?.let { "Audience $it" },
                             )
-                            if (resumeMs > 0) {
-                                Button(onClick = { play(resumeMs) }, modifier = Modifier.initialFocus(item.ratingKey)) {
-                                    Text("Resume ${formatMs(resumeMs)}")
-                                }
-                                OutlinedButton(onClick = { play(0) }) { Text("Start over") }
-                            } else {
-                                Button(onClick = { play(0) }, modifier = Modifier.initialFocus(item.ratingKey)) {
-                                    Text("Play")
-                                }
+                            meta.forEach {
+                                Text(it, style = MaterialTheme.typography.bodySmall, color = palette.graphite)
                             }
                         }
-                    }
-                    if (item.type == "movie" || item.type == "episode") {
-                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                            AssistChip(
-                                onClick = { showPlaylistPicker = true },
-                                label = { Text("Add to playlist") },
+                        item.summary?.takeIf { it.isNotBlank() }?.let {
+                            Text(
+                                it,
+                                style = MaterialTheme.typography.bodyLarge,
+                                maxLines = 5,
+                                modifier = Modifier.widthIn(max = 620.dp),
                             )
                         }
+                        if (item.media.isNotEmpty()) {
+                            if (item.media.size > 1) {
+                                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                    item.media.forEachIndexed { index, version ->
+                                        LinenChip(
+                                            selected = index == versionIndex,
+                                            onClick = { versionIndex = index },
+                                            label = version.label,
+                                        )
+                                    }
+                                }
+                            }
+                            val streams = item.media.getOrNull(versionIndex)?.parts?.firstOrNull()
+                                ?.streams.orEmpty()
+                            val audioTracks = streams.filter { it.isAudio }
+                            val subtitleTracks = streams.filter { it.isSubtitle }
+                            if (audioTracks.size > 1) {
+                                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                    audioTracks.forEach { track ->
+                                        LinenChip(
+                                            selected = audioId == track.id || (audioId == null && track.selected),
+                                            onClick = { audioId = track.id },
+                                            label = track.label,
+                                        )
+                                    }
+                                }
+                            }
+                            if (subtitleTracks.isNotEmpty()) {
+                                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                    LinenChip(
+                                        selected = subId == null,
+                                        onClick = { subId = null },
+                                        label = "No subtitles",
+                                    )
+                                    subtitleTracks.forEach { track ->
+                                        LinenChip(
+                                            selected = subId == track.id,
+                                            onClick = { subId = track.id },
+                                            label = track.label,
+                                        )
+                                    }
+                                }
+                            }
+                            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                listOf(null, 8000, 4000, 2000).forEach { kbps ->
+                                    LinenChip(
+                                        selected = qualityOverride == kbps,
+                                        onClick = { qualityOverride = kbps },
+                                        label = if (kbps == null) "Auto quality" else "${kbps / 1000} Mbps",
+                                    )
+                                }
+                            }
+                            Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                                val resumeMs = item.viewOffset ?: 0L
+                                fun play(startMs: Long) = nav.navigate(
+                                    Routes.player(
+                                        item.ratingKey.orEmpty(),
+                                        versionIndex,
+                                        startMs,
+                                        audioId = audioId,
+                                        subId = subId,
+                                        maxKbps = qualityOverride,
+                                    ),
+                                )
+                                if (resumeMs > 0) {
+                                    Button(onClick = { play(resumeMs) }, modifier = Modifier.initialFocus(item.ratingKey)) {
+                                        Text("Resume ${formatMs(resumeMs)}")
+                                    }
+                                    OutlinedButton(onClick = { play(0) }) { Text("Start over") }
+                                } else {
+                                    Button(onClick = { play(0) }, modifier = Modifier.initialFocus(item.ratingKey)) {
+                                        Text("Play")
+                                    }
+                                }
+                                if (item.type == "movie" || item.type == "episode") {
+                                    OutlinedButton(onClick = { showPlaylistPicker = true }) {
+                                        Text("Add to playlist")
+                                    }
+                                }
+                            }
+                        }
+                        playlistMessage?.let { Text(it, style = MaterialTheme.typography.bodySmall, color = palette.graphite) }
                     }
-                    playlistMessage?.let { Text(it, style = MaterialTheme.typography.bodySmall) }
                 }
             }
         }
@@ -208,11 +241,8 @@ fun DetailScreen(
         if (loaded.children.isNotEmpty()) {
             item {
                 Column {
-                    Text(
-                        if (item.type == "show") "Seasons" else "Episodes",
-                        style = MaterialTheme.typography.titleMedium,
-                    )
-                    Spacer(Modifier.height(8.dp))
+                    SectionHeader(if (item.type == "show") "Seasons" else "Episodes")
+                    Spacer(Modifier.height(10.dp))
                     LazyRow(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                         items(loaded.children, key = { it.ratingKey ?: it.title }) { child ->
                             PosterCard(
@@ -229,8 +259,8 @@ fun DetailScreen(
         if (item.chapters.isNotEmpty()) {
             item {
                 Column {
-                    Text("Chapters", style = MaterialTheme.typography.titleMedium)
-                    Spacer(Modifier.height(8.dp))
+                    SectionHeader("Chapters")
+                    Spacer(Modifier.height(10.dp))
                     LazyRow(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                         items(item.chapters, key = { it.id ?: (it.startTimeOffset ?: 0L) }) { chapter ->
                             Card(onClick = {
@@ -268,8 +298,8 @@ fun DetailScreen(
         if (extras.isNotEmpty()) {
             item {
                 Column {
-                    Text("Trailers & Extras", style = MaterialTheme.typography.titleMedium)
-                    Spacer(Modifier.height(8.dp))
+                    SectionHeader("Trailers & Extras")
+                    Spacer(Modifier.height(10.dp))
                     LazyRow(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                         items(extras, key = { it.ratingKey ?: it.title }) { extra ->
                             PosterCard(
