@@ -54,6 +54,7 @@ androidx-datastore-preferences = { module = "androidx.datastore:datastore-prefer
 # Compose
 compose-bom = { module = "androidx.compose:compose-bom", version.ref = "compose-bom" }
 compose-material3 = { module = "androidx.compose.material3:material3" }
+compose-material-icons-core = { module = "androidx.compose.material:material-icons-core" }
 compose-ui-tooling-preview = { module = "androidx.compose.ui:ui-tooling-preview" }
 tv-material = { module = "androidx.tv:tv-material", version.ref = "tv-material" }
 

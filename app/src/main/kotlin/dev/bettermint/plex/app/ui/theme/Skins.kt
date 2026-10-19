@@ -29,7 +29,7 @@ data class WebOsPalette(
     val ink: Color = Color(0xFF141416),
     val charcoal: Color = Color(0xFF2B2B2E),
     val charcoalHigh: Color = Color(0xFF3A3A3E),
-    val linen: Color = Color(0xFFECE9E4),
+    val linen: Color = Color(0xFFF2F0EB),
     val onLinen: Color = Color(0xFF232220),
     val graphite: Color = Color(0xFF6E6B66),
     val glow: Color = Color(0xFF3D8EDB),

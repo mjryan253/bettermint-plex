@@ -15,6 +15,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -22,8 +23,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.graphics.Color
 import coil3.compose.AsyncImage
 import dev.bettermint.plex.api.model.Metadata
+import dev.bettermint.plex.app.ui.theme.LocalWebOsPalette
 import dev.bettermint.plex.data.LibraryRepository
 
 const val POSTER_WIDTH_DP = 150
@@ -55,12 +58,18 @@ fun PosterCard(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    val palette = LocalWebOsPalette.current
     var focused by remember { mutableStateOf(false) }
     val scale by animateFloatAsState(if (focused) 1.08f else 1f, label = "posterScale")
     val shape = RoundedCornerShape(12.dp)
     Card(
         onClick = onClick,
         shape = shape,
+        // Light tile with dark text, like webOS list panels; posters carry the color.
+        colors = CardDefaults.cardColors(
+            containerColor = Color(0xFFFCFBF8),
+            contentColor = palette.onLinen,
+        ),
         modifier = modifier
             .width(POSTER_WIDTH_DP.dp)
             .graphicsLayer { scaleX = scale; scaleY = scale }
@@ -90,6 +99,7 @@ fun PosterCard(
                 Text(
                     it,
                     style = MaterialTheme.typography.bodySmall,
+                    color = palette.graphite,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
                 )

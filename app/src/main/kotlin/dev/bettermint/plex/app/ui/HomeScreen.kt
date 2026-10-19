@@ -13,7 +13,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.itemsIndexed
-import androidx.compose.material3.AssistChip
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
@@ -32,6 +32,7 @@ import dev.bettermint.plex.api.model.Hub
 import dev.bettermint.plex.api.model.HomeUser
 import dev.bettermint.plex.app.SessionState
 import dev.bettermint.plex.app.SessionViewModel
+import dev.bettermint.plex.app.ui.theme.LocalWebOsPalette
 import dev.bettermint.plex.data.LibraryRepository
 
 @Composable
@@ -46,12 +47,16 @@ fun HomeScreen(
     }
     var pinPromptFor by remember { mutableStateOf<HomeUser?>(null) }
 
+    val palette = LocalWebOsPalette.current
+
+    // webOS card view: each hub is a light floating card over the wallpaper,
+    // with margins keeping the scene visible around every card.
     LazyColumn(
-        modifier = Modifier.fillMaxSize().padding(horizontal = 24.dp),
-        verticalArrangement = Arrangement.spacedBy(16.dp),
+        modifier = Modifier.fillMaxSize().padding(horizontal = 20.dp),
+        verticalArrangement = Arrangement.spacedBy(18.dp),
     ) {
         item {
-            Spacer(Modifier.height(10.dp))
+            Spacer(Modifier.height(12.dp))
             WebOsHeaderPill(ready.serverName)
             if (ready.switchError != null) {
                 Text(ready.switchError, color = MaterialTheme.colorScheme.error)
@@ -59,22 +64,28 @@ fun HomeScreen(
         }
 
         when (val loaded = hubs) {
-            null -> item { Text("Loading your library...") }
+            null -> item { Text("Loading your library...", color = palette.warmWhite) }
             else -> itemsIndexed(loaded, key = { _, h -> h.hubIdentifier ?: h.title }) { hubIndex, hub ->
-                Column {
-                    SectionHeader(hub.title)
-                    Spacer(Modifier.height(10.dp))
-                    LazyRow(
-                        horizontalArrangement = Arrangement.spacedBy(12.dp),
-                        modifier = Modifier.focusRestorer(),
-                    ) {
-                        itemsIndexed(hub.items, key = { _, it -> it.ratingKey ?: it.title }) { index, item ->
-                            PosterCard(
-                                item = item,
-                                library = library,
-                                onClick = { nav.navigate(Routes.details(item.ratingKey.orEmpty())) },
-                                modifier = if (hubIndex == 0 && index == 0) Modifier.initialFocus() else Modifier,
-                            )
+                FloatingCard(Modifier.fillMaxWidth()) {
+                    Column(Modifier.padding(16.dp)) {
+                        SectionHeader(
+                            hub.title,
+                            labelColor = palette.graphite,
+                            ruleColor = palette.graphite.copy(alpha = 0.45f),
+                        )
+                        Spacer(Modifier.height(12.dp))
+                        LazyRow(
+                            horizontalArrangement = Arrangement.spacedBy(12.dp),
+                            modifier = Modifier.focusRestorer(),
+                        ) {
+                            itemsIndexed(hub.items, key = { _, it -> it.ratingKey ?: it.title }) { index, item ->
+                                PosterCard(
+                                    item = item,
+                                    library = library,
+                                    onClick = { nav.navigate(Routes.details(item.ratingKey.orEmpty())) },
+                                    modifier = if (hubIndex == 0 && index == 0) Modifier.initialFocus() else Modifier,
+                                )
+                            }
                         }
                     }
                 }
@@ -83,28 +94,35 @@ fun HomeScreen(
 
         if (ready.homeUsers.size > 1) {
             item {
-                Column {
-                    SectionHeader("Switch user")
-                    Spacer(Modifier.height(8.dp))
-                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        ready.homeUsers.forEach { user ->
-                            AssistChip(
-                                onClick = {
-                                    if (user.protected) {
-                                        pinPromptFor = user
-                                    } else {
-                                        sessionViewModel.switchHomeUser(user, null)
-                                    }
-                                },
-                                label = { Text(user.title) },
-                            )
+                FloatingCard(Modifier.fillMaxWidth()) {
+                    Column(Modifier.padding(16.dp)) {
+                        SectionHeader(
+                            "Switch user",
+                            labelColor = palette.graphite,
+                            ruleColor = palette.graphite.copy(alpha = 0.45f),
+                        )
+                        Spacer(Modifier.height(10.dp))
+                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            ready.homeUsers.forEach { user ->
+                                LinenChip(
+                                    selected = false,
+                                    onClick = {
+                                        if (user.protected) {
+                                            pinPromptFor = user
+                                        } else {
+                                            sessionViewModel.switchHomeUser(user, null)
+                                        }
+                                    },
+                                    label = user.title,
+                                )
+                            }
                         }
                     }
                 }
             }
         }
 
-        item { Spacer(Modifier.height(24.dp)) }
+        item { Spacer(Modifier.height(8.dp)) }
     }
 
     pinPromptFor?.let { user ->

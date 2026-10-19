@@ -1,6 +1,12 @@
 package dev.bettermint.plex.app.ui
 
 import android.net.Uri
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.scaleIn
+import androidx.compose.animation.scaleOut
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
@@ -74,16 +80,17 @@ fun MainNavHost(
         }
     }
 
-    // webOS bottom pill bar on top-level destinations; hidden in detail/player.
+    // webOS Quick Launch dock on top-level destinations; hidden in detail/player.
     val tabs = remember(ready.libraries) {
         buildList {
-            add(TabSpec(Routes.HOME, "Home"))
+            add(DockSpec(Routes.HOME, "Home", DockGlyph.Home))
             ready.libraries.filter { it.type == "movie" || it.type == "show" }.forEach { section ->
-                add(TabSpec("lib/${section.key}", section.title))
+                val glyph = if (section.type == "show") DockGlyph.Shows else DockGlyph.Movies
+                add(DockSpec("lib/${section.key}", section.title, glyph))
             }
-            add(TabSpec(Routes.PLAYLISTS, "Playlists"))
-            add(TabSpec(Routes.SEARCH, "Search"))
-            add(TabSpec(Routes.SETTINGS, "Settings"))
+            add(DockSpec(Routes.PLAYLISTS, "Playlists", DockGlyph.Playlists))
+            add(DockSpec(Routes.SEARCH, "Search", DockGlyph.Search))
+            add(DockSpec(Routes.SETTINGS, "Settings", DockGlyph.Settings))
         }
     }
     val backStackEntry by nav.currentBackStackEntryAsState()
@@ -98,30 +105,33 @@ fun MainNavHost(
     }
     val showBar = selectedTabId != null
 
-    Column(modifier = Modifier.fillMaxSize()) {
-        Box(modifier = Modifier.weight(1f)) {
-            MainNavGraph(nav, library, ready, sessionViewModel)
-        }
-        if (showBar) {
-            WebOsTabBar(
-                tabs = tabs,
-                selectedId = selectedTabId,
-                onSelect = { tab ->
-                    val target = when {
-                        tab.id == Routes.HOME -> Routes.HOME
-                        tab.id.startsWith("lib/") -> {
-                            val key = tab.id.removePrefix("lib/")
-                            Routes.library(key, tabs.first { it.id == tab.id }.label)
+    Box(modifier = Modifier.fillMaxSize()) {
+        WebOsWallpaper()
+        Column(modifier = Modifier.fillMaxSize()) {
+            Box(modifier = Modifier.weight(1f)) {
+                MainNavGraph(nav, library, ready, sessionViewModel)
+            }
+            if (showBar) {
+                WebOsDock(
+                    tabs = tabs,
+                    selectedId = selectedTabId,
+                    onSelect = { tab ->
+                        val target = when {
+                            tab.id == Routes.HOME -> Routes.HOME
+                            tab.id.startsWith("lib/") -> {
+                                val key = tab.id.removePrefix("lib/")
+                                Routes.library(key, tabs.first { it.id == tab.id }.label)
+                            }
+                            else -> tab.id
                         }
-                        else -> tab.id
-                    }
-                    nav.navigate(target) {
-                        popUpTo(Routes.HOME) { saveState = true }
-                        launchSingleTop = true
-                        restoreState = true
-                    }
-                },
-            )
+                        nav.navigate(target) {
+                            popUpTo(Routes.HOME) { saveState = true }
+                            launchSingleTop = true
+                            restoreState = true
+                        }
+                    },
+                )
+            }
         }
     }
 }
@@ -133,7 +143,22 @@ private fun MainNavGraph(
     ready: SessionState.Ready,
     sessionViewModel: SessionViewModel,
 ) {
-    NavHost(navController = nav, startDestination = Routes.HOME) {
+    // webOS card motion: a screen opens by zooming up from its card, and Back
+    // shrinks it down again; the wallpaper stays put underneath throughout.
+    NavHost(
+        navController = nav,
+        startDestination = Routes.HOME,
+        enterTransition = {
+            fadeIn(tween(220)) +
+                scaleIn(initialScale = 0.88f, animationSpec = tween(300, easing = FastOutSlowInEasing))
+        },
+        exitTransition = { fadeOut(tween(180)) },
+        popEnterTransition = { fadeIn(tween(200)) },
+        popExitTransition = {
+            fadeOut(tween(220)) +
+                scaleOut(targetScale = 0.88f, animationSpec = tween(280, easing = FastOutSlowInEasing))
+        },
+    ) {
         composable(Routes.HOME) {
             HomeScreen(library, ready, sessionViewModel, nav)
         }

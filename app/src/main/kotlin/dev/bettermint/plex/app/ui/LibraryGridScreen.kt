@@ -11,7 +11,6 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.ui.focus.focusRestorer
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
-import androidx.compose.material3.AssistChip
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -39,33 +38,40 @@ fun LibraryGridScreen(
     }
     val items = pager.flow.collectAsLazyPagingItems()
 
-    Column(Modifier.fillMaxSize().padding(horizontal = 24.dp)) {
-        Spacer(Modifier.height(8.dp))
-        Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-            Text(title, style = MaterialTheme.typography.headlineMedium)
-            AssistChip(
-                onClick = { nav.navigate(Routes.collections(sectionKey, "$title Collections")) },
-                label = { Text("Collections") },
-            )
-        }
-        Spacer(Modifier.height(12.dp))
-        LazyVerticalGrid(
-            columns = GridCells.Adaptive(minSize = POSTER_WIDTH_DP.dp),
-            horizontalArrangement = Arrangement.spacedBy(12.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp),
-            modifier = Modifier.focusRestorer(),
-        ) {
-            items(
-                count = items.itemCount,
-                key = items.itemKey { it.ratingKey ?: it.title },
-            ) { index ->
-                items[index]?.let { item ->
-                    PosterCard(
-                        item = item,
-                        library = library,
-                        onClick = { nav.navigate(Routes.details(item.ratingKey.orEmpty())) },
-                        modifier = if (index == 0) Modifier.initialFocus() else Modifier,
-                    )
+    // A maximized webOS card: the grid rides a light panel, wallpaper at the margins.
+    FloatingCard(Modifier.fillMaxSize().padding(horizontal = 20.dp, vertical = 14.dp)) {
+        Column(Modifier.fillMaxSize().padding(horizontal = 18.dp)) {
+            Spacer(Modifier.height(14.dp))
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
+                verticalAlignment = androidx.compose.ui.Alignment.CenterVertically,
+            ) {
+                Text(title, style = MaterialTheme.typography.headlineMedium)
+                LinenChip(
+                    selected = false,
+                    onClick = { nav.navigate(Routes.collections(sectionKey, "$title Collections")) },
+                    label = "Collections",
+                )
+            }
+            Spacer(Modifier.height(12.dp))
+            LazyVerticalGrid(
+                columns = GridCells.Adaptive(minSize = POSTER_WIDTH_DP.dp),
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp),
+                modifier = Modifier.focusRestorer(),
+            ) {
+                items(
+                    count = items.itemCount,
+                    key = items.itemKey { it.ratingKey ?: it.title },
+                ) { index ->
+                    items[index]?.let { item ->
+                        PosterCard(
+                            item = item,
+                            library = library,
+                            onClick = { nav.navigate(Routes.details(item.ratingKey.orEmpty())) },
+                            modifier = if (index == 0) Modifier.initialFocus() else Modifier,
+                        )
+                    }
                 }
             }
         }

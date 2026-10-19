@@ -7,7 +7,6 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.FilterChip
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -40,44 +39,47 @@ fun SettingsScreen(sessionViewModel: SessionViewModel) {
     }
     val current = prefs ?: initial
 
-    Column(Modifier.fillMaxSize().padding(horizontal = 24.dp)) {
-        Spacer(Modifier.height(8.dp))
-        Text("Settings", style = MaterialTheme.typography.headlineMedium)
-        Spacer(Modifier.height(16.dp))
-        if (current == null) {
-            Text("Loading...")
-            return@Column
-        }
-
-        Text("Home network quality", style = MaterialTheme.typography.titleMedium)
-        Spacer(Modifier.height(8.dp))
-        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            qualitySteps.forEach { kbps ->
-                FilterChip(
-                    selected = current.maxKbpsLocal == kbps,
-                    onClick = {
-                        val updated = current.copy(maxKbpsLocal = kbps)
-                        prefs = updated
-                        scope.launch { store.setQualityPrefs(updated) }
-                    },
-                    label = { Text(qualityLabel(kbps)) },
-                )
+    // A maximized webOS card over the wallpaper, as throughout the app.
+    FloatingCard(Modifier.fillMaxSize().padding(horizontal = 20.dp, vertical = 14.dp)) {
+        Column(Modifier.fillMaxSize().padding(horizontal = 18.dp)) {
+            Spacer(Modifier.height(14.dp))
+            Text("Settings", style = MaterialTheme.typography.headlineMedium)
+            Spacer(Modifier.height(16.dp))
+            if (current == null) {
+                Text("Loading...")
+                return@Column
             }
-        }
-        Spacer(Modifier.height(16.dp))
-        Text("Remote quality", style = MaterialTheme.typography.titleMedium)
-        Spacer(Modifier.height(8.dp))
-        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            qualitySteps.forEach { kbps ->
-                FilterChip(
-                    selected = current.maxKbpsRemote == kbps,
-                    onClick = {
-                        val updated = current.copy(maxKbpsRemote = kbps)
-                        prefs = updated
-                        scope.launch { store.setQualityPrefs(updated) }
-                    },
-                    label = { Text(qualityLabel(kbps)) },
-                )
+
+            Text("Home network quality", style = MaterialTheme.typography.titleMedium)
+            Spacer(Modifier.height(8.dp))
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                qualitySteps.forEach { kbps ->
+                    LinenChip(
+                        selected = current.maxKbpsLocal == kbps,
+                        onClick = {
+                            val updated = current.copy(maxKbpsLocal = kbps)
+                            prefs = updated
+                            scope.launch { store.setQualityPrefs(updated) }
+                        },
+                        label = qualityLabel(kbps),
+                    )
+                }
+            }
+            Spacer(Modifier.height(16.dp))
+            Text("Remote quality", style = MaterialTheme.typography.titleMedium)
+            Spacer(Modifier.height(8.dp))
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                qualitySteps.forEach { kbps ->
+                    LinenChip(
+                        selected = current.maxKbpsRemote == kbps,
+                        onClick = {
+                            val updated = current.copy(maxKbpsRemote = kbps)
+                            prefs = updated
+                            scope.launch { store.setQualityPrefs(updated) }
+                        },
+                        label = qualityLabel(kbps),
+                    )
+                }
             }
         }
     }

@@ -38,6 +38,7 @@ dependencies {
     implementation(libs.androidx.paging.compose)
     implementation(platform(libs.compose.bom))
     implementation(libs.compose.material3)
+    implementation(libs.compose.material.icons.core)
     implementation(libs.coil.compose)
     implementation(libs.coil.network.okhttp)
     implementation(libs.media3.exoplayer)

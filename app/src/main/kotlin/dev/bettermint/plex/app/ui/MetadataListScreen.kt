@@ -31,26 +31,29 @@ fun MetadataListScreen(
         value = runCatching { load() }.getOrDefault(emptyList())
     }
 
-    Column(Modifier.fillMaxSize().padding(horizontal = 24.dp)) {
-        Spacer(Modifier.height(8.dp))
-        Text(title, style = MaterialTheme.typography.headlineMedium)
-        Spacer(Modifier.height(12.dp))
-        when (val list = items) {
-            null -> Text("Loading...")
-            else -> {
-                if (list.isEmpty()) Text("Nothing here yet. Items you add in Plex appear here.")
-                LazyVerticalGrid(
-                    columns = GridCells.Adaptive(minSize = POSTER_WIDTH_DP.dp),
-                    horizontalArrangement = Arrangement.spacedBy(12.dp),
-                    verticalArrangement = Arrangement.spacedBy(12.dp),
-                ) {
-                    itemsIndexed(list, key = { _, it -> it.ratingKey ?: it.title }) { index, item ->
-                        PosterCard(
-                            item = item,
-                            library = library,
-                            onClick = { onItem(item) },
-                            modifier = if (index == 0) Modifier.initialFocus() else Modifier,
-                        )
+    // A maximized webOS card: the grid rides a light panel, wallpaper at the margins.
+    FloatingCard(Modifier.fillMaxSize().padding(horizontal = 20.dp, vertical = 14.dp)) {
+        Column(Modifier.fillMaxSize().padding(horizontal = 18.dp)) {
+            Spacer(Modifier.height(14.dp))
+            Text(title, style = MaterialTheme.typography.headlineMedium)
+            Spacer(Modifier.height(12.dp))
+            when (val list = items) {
+                null -> Text("Loading...")
+                else -> {
+                    if (list.isEmpty()) Text("Nothing here yet. Items you add in Plex appear here.")
+                    LazyVerticalGrid(
+                        columns = GridCells.Adaptive(minSize = POSTER_WIDTH_DP.dp),
+                        horizontalArrangement = Arrangement.spacedBy(12.dp),
+                        verticalArrangement = Arrangement.spacedBy(12.dp),
+                    ) {
+                        itemsIndexed(list, key = { _, it -> it.ratingKey ?: it.title }) { index, item ->
+                            PosterCard(
+                                item = item,
+                                library = library,
+                                onClick = { onItem(item) },
+                                modifier = if (index == 0) Modifier.initialFocus() else Modifier,
+                            )
+                        }
                     }
                 }
             }
