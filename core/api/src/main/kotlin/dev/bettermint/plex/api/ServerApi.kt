@@ -154,6 +154,49 @@ class ServerApi(
         accessToken?.let { append("&X-Plex-Token=$it") }
     }
 
+    /**
+     * Report playback position to the server. [state] is playing/paused/stopped.
+     * Drives Continue Watching and resume offsets, and makes our session visible
+     * in /status/sessions. Fire-and-forget; errors are swallowed.
+     */
+    suspend fun timeline(
+        ratingKey: String,
+        state: String,
+        timeMs: Long,
+        durationMs: Long,
+        playQueueItemId: Long? = null,
+    ) {
+        runCatching {
+            get("$baseUrl/:/timeline") {
+                parameter("ratingKey", ratingKey)
+                parameter("key", "/library/metadata/$ratingKey")
+                parameter("state", state)
+                parameter("time", timeMs.toString())
+                parameter("duration", durationMs.toString())
+                parameter("hasMDE", "1")
+                playQueueItemId?.let { parameter("playQueueItemID", it.toString()) }
+            }
+        }
+    }
+
+    suspend fun scrobble(ratingKey: String) {
+        runCatching {
+            get("$baseUrl/:/scrobble") {
+                parameter("key", ratingKey)
+                parameter("identifier", "com.plexapp.plugins.library")
+            }
+        }
+    }
+
+    suspend fun unscrobble(ratingKey: String) {
+        runCatching {
+            get("$baseUrl/:/unscrobble") {
+                parameter("key", ratingKey)
+                parameter("identifier", "com.plexapp.plugins.library")
+            }
+        }
+    }
+
     /** Tear down a transcode session when playback stops or restarts. */
     suspend fun stopTranscode(sessionId: String) {
         runCatching {

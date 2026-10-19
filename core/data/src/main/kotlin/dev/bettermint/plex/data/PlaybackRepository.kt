@@ -78,7 +78,23 @@ class PlaybackRepository(
         source.sessionId?.let { api.stopTranscode(it) }
     }
 
+    suspend fun reportProgress(
+        ratingKey: String,
+        state: String,
+        timeMs: Long,
+        durationMs: Long,
+        playQueueItemId: Long? = null,
+    ) = api.timeline(ratingKey, state, timeMs, durationMs, playQueueItemId)
+
+    suspend fun markWatched(ratingKey: String) = api.scrobble(ratingKey)
+
     companion object {
+        const val WATCHED_FRACTION = 0.9
+
+        /** True once playback has passed the watched threshold. */
+        fun isWatched(timeMs: Long, durationMs: Long): Boolean =
+            durationMs > 0 && timeMs >= durationMs * WATCHED_FRACTION
+
         /** Next method to try after [failed], or null when nothing is left. */
         fun fallbackAfter(failed: Method): Method? = when (failed) {
             Method.DirectPlay -> Method.DirectStream

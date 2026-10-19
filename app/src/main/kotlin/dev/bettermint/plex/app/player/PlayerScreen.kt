@@ -4,6 +4,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.produceState
@@ -26,7 +27,11 @@ import dev.bettermint.plex.data.PlaybackRepository
 import kotlinx.coroutines.DelicateCoroutinesApi
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.GlobalScope
+import kotlinx.coroutines.NonCancellable
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 /**
  * Player with a runtime fallback chain: whatever the decider picked, a fatal
@@ -124,6 +129,38 @@ fun PlayerScreen(
             playWhenReady = true
         }
     }
+    // Report progress every 10s while playing, plus on pause, and scrobble once
+    // past the watched threshold. The server uses this for Continue Watching,
+    // resume offsets, and to show our session in /status/sessions.
+    LaunchedEffect(player, loaded.ratingKey) {
+        val ratingKey = loaded.ratingKey ?: return@LaunchedEffect
+        var scrobbled = false
+        // Last position read while the player was alive. The stopped ping uses
+        // this instead of reading the player, which DisposableEffect may have
+        // already released during composable teardown.
+        var lastPos = active.seekToMs
+        var lastDur = loaded.duration ?: 0L
+        try {
+            while (isActive) {
+                val (pos, dur, playing) = withContext(Dispatchers.Main) {
+                    Triple(player.currentPosition, player.duration, player.isPlaying)
+                }
+                lastPos = pos
+                if (dur > 0) lastDur = dur
+                playback.reportProgress(ratingKey, if (playing) "playing" else "paused", pos, lastDur)
+                if (!scrobbled && PlaybackRepository.isWatched(pos, lastDur)) {
+                    scrobbled = true
+                    playback.markWatched(ratingKey)
+                }
+                delay(10_000)
+            }
+        } finally {
+            withContext(NonCancellable) {
+                runCatching { playback.reportProgress(ratingKey, "stopped", lastPos, lastDur) }
+            }
+        }
+    }
+
     DisposableEffect(player) {
         onDispose {
             player.release()

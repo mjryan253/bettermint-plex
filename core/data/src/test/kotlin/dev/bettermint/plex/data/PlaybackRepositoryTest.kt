@@ -32,6 +32,15 @@ class PlaybackRepositoryTest {
     }
 
     @Test
+    fun `isWatched triggers at ninety percent`() {
+        assertFalse(PlaybackRepository.isWatched(timeMs = 0, durationMs = 1000))
+        assertFalse(PlaybackRepository.isWatched(timeMs = 899, durationMs = 1000))
+        assertTrue(PlaybackRepository.isWatched(timeMs = 900, durationMs = 1000))
+        assertTrue(PlaybackRepository.isWatched(timeMs = 1000, durationMs = 1000))
+        assertFalse("no duration means not watched", PlaybackRepository.isWatched(timeMs = 500, durationMs = 0))
+    }
+
+    @Test
     fun `resolveCap prefers override, then connection-specific preset`() {
         assertEquals(4000, PlaybackRepository.resolveCap(4000, 0, 0, isLocal = true))
         assertEquals(8000, PlaybackRepository.resolveCap(null, 8000, 2000, isLocal = true))
