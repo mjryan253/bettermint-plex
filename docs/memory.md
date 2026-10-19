@@ -32,15 +32,19 @@ Full approved plan: `~/.claude/plans/https-github-com-morluto-rea-use-the-rea-ti
 
 ## Status
 
-- **Milestone**: M0 in progress — scaffold written, build NOT yet verified.
-- Git repo initialized (branch `main`). Gradle scaffold complete: 3 modules, version catalog, wrapper (Gradle 9.8.1, jar from gradle/gradle v9.8.1 tag), dual-launcher manifest, hello MainActivity with TV/mobile detection, placeholder icon + TV banner drawables.
-- Module deps deliberately minimal (unused deps trimmed per CLAUDE.md); full pinned versions live in `gradle/libs.versions.toml` and get wired per milestone.
-- **Blocked on user (host commands needing password/permission):**
-  1. `sudo apt update && sudo apt install -y openjdk-21-jdk sdkmanager git zip unzip curl`, then `sdkmanager --install "platform-tools" "platforms;android-37" "build-tools;37.0.0"` + `sdkmanager --licenses` (ANDROID_HOME=~/Android/Sdk).
-  2. `gh repo create bettermint-plex --public --source . --remote origin` from the repo root (sandbox permission system blocked creating a public repo; gh is authed as mjryan253).
-- Next after unblock: run `./gradlew :core:api:test :app:assembleDebug` on host, fix any AGP 9 wiring issues, deploy to phone + Fire Stick, then M0 milestone commit.
+- **Milestone**: M0 COMPLETE (2026-10-18). Next: M1 (auth + server connect + Plex Home).
+- Build verified on host: `./gradlew :core:api:test :app:assembleDebug` green (Gradle 9.8.1 / AGP 9.4.1 / JDK 21.0.12.1, first try).
+- Deployed to Fire TV Stick 4K (AFTMM "mantis", Fire OS 6 / API 25 — the minSdk floor device) at 192.168.1.87:5555 via host adb; renders "Bettermint — TV" (screenshot-verified), launched via LEANBACK_LAUNCHER intent.
+- **Pending**: mobile form-factor check on a real phone (no phone connected yet); second device at 192.168.1.125:5555 (another Fire TV) still shows "unauthorized" — user hasn't accepted the ADB prompt there.
+- GitHub repo created and pushed by user: github.com/mjryan253/bettermint-plex.
+
+### SDK install gotchas (host)
+- Ubuntu/Mint's apt `sdkmanager` package is broken — reports installs it never performs (its real SDK lives root-owned at /usr/lib/android-sdk). Do not use.
+- Working setup: Google cmdline-tools (commandlinetools-linux-16111833) at `~/Android/Sdk/cmdline-tools/latest`; sdkmanager is deprecated in it — use `android sdk install/list` (new Android CLI).
+- **Platform packages now use minor versions**: `platforms;android-37` does not exist; `platforms;android-37.0` is what satisfies compileSdk 37. Installed: platform-tools 37.0.1, build-tools;37.0.0, platforms;android-37.0.
 
 ## Change log
 
 - **2026-10-18** — Project planned and approved (research: REA capabilities, top-requested Plex features, client landscape; decisions above). Git repo initialized with repo-local identity; docs/memory.md created.
 - **2026-10-18** — M0 scaffold: Gradle 9.8.1 wrapper, version catalog (AGP 9.4.1 / Kotlin 2.4.21 / Compose BOM 2026.09.00 / Media3 1.11.1 / Ktor 3.6.0 — cross-checked against jellyfin-androidtv master and Maven metadata), modules :core:api (pure JVM) / :core:data / :app, AGP 9 built-in Kotlin pattern (kotlin-gradle on buildscript classpath, kotlin.compose plugin in :app), dual LAUNCHER/LEANBACK_LAUNCHER manifest, local.properties → ~/Android/Sdk.
+- **2026-10-18** — M0 complete: build verified on host (test + assembleDebug green); hello APK deployed to Fire TV Stick 4K (AFTMM, Fire OS 6) via host adb, TV form factor + leanback launcher confirmed by screenshot. SDK gotchas documented above.
