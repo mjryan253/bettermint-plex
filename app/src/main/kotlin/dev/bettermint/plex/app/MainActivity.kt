@@ -1,33 +1,46 @@
 package dev.bettermint.plex.app
 
-import android.app.UiModeManager
-import android.content.res.Configuration
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
-import androidx.compose.material3.Text
-import androidx.compose.ui.Alignment
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.ViewModelProvider
+import dev.bettermint.plex.app.ui.FailedScreen
+import dev.bettermint.plex.app.ui.HomeScreen
+import dev.bettermint.plex.app.ui.LoadingScreen
+import dev.bettermint.plex.app.ui.ServerPickerScreen
+import dev.bettermint.plex.app.ui.SignInScreen
 
 class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        val uiModeManager = getSystemService(UI_MODE_SERVICE) as UiModeManager
-        val isTv = uiModeManager.currentModeType == Configuration.UI_MODE_TYPE_TELEVISION
+        val graph = (application as BettermintApp).graph
+        val viewModel = ViewModelProvider(
+            this,
+            object : ViewModelProvider.Factory {
+                @Suppress("UNCHECKED_CAST")
+                override fun <T : ViewModel> create(modelClass: Class<T>): T =
+                    SessionViewModel(graph) as T
+            },
+        )[SessionViewModel::class.java]
 
         setContent {
             MaterialTheme {
                 Surface(modifier = Modifier.fillMaxSize()) {
-                    Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxSize()) {
-                        Text(
-                            text = if (isTv) "Bettermint — TV" else "Bettermint — Mobile",
-                            style = MaterialTheme.typography.headlineMedium,
-                        )
+                    val state by viewModel.state.collectAsState()
+                    when (val s = state) {
+                        is SessionState.Loading -> LoadingScreen()
+                        is SessionState.SignIn -> SignInScreen(s, onRetry = viewModel::startSignIn)
+                        is SessionState.PickServer -> ServerPickerScreen(s, onSelect = viewModel::selectServer)
+                        is SessionState.Ready -> HomeScreen(s, onSwitchUser = viewModel::switchHomeUser)
+                        is SessionState.Failed -> FailedScreen(s, onRetry = viewModel::retry)
                     }
                 }
             }

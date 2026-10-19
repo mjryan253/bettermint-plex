@@ -12,7 +12,7 @@ import org.junit.Test
 class PlexTvApiTest {
 
     @Test
-    fun `createPin posts strong=true and parses the code`() = runTest {
+    fun `createPin posts a non-strong pin and parses the code`() = runTest {
         var method: HttpMethod? = null
         var url = ""
         val api = PlexTvApi(testClient { request ->
@@ -24,7 +24,7 @@ class PlexTvApiTest {
 
         assertEquals(HttpMethod.Post, method)
         assertTrue(url.startsWith("https://plex.tv/api/v2/pins"))
-        assertTrue(url.contains("strong=true"))
+        assertTrue("manual-entry flow must not request a strong pin", !url.contains("strong=true"))
         assertEquals(12345678901L, pin.id)
         assertEquals("ABCD", pin.code)
         assertNull(pin.authToken)

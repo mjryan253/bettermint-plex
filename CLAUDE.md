@@ -76,4 +76,5 @@ Follow the behavioral guidelines in this document — **Think Before Coding · S
 - **Never push to a remote unless explicitly told to.** Local commits when asked are fine, but `git push` (any branch) requires an explicit instruction each time — never push on your own initiative.
 - **`flatpak-spawn --host`** will be used to access anything on the local machine outside of the sandbox (nmap, mnamer, etc.) in discovery and read-only mode. Edits and writes done this way must be explicitly approved by the user.
 - **Keep `docs/memory.md` current.** Read it at the start of every session. Whenever the user accepts a change (code, wiring, docs, config, decisions), record it in `docs/memory.md` — update the affected status sections and add a dated change-log entry — as part of the same piece of work, so future agents inherit the context.
+- **Never use em dashes.** Never use em dashes in any situation other than a numerical use.
 

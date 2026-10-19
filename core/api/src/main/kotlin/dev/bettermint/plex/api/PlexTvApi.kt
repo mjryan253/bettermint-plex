@@ -18,9 +18,13 @@ import io.ktor.http.isSuccess
 /** plex.tv account endpoints (PIN auth, resources, Plex Home). */
 class PlexTvApi(private val client: HttpClient, private val baseUrl: String = "https://plex.tv") {
 
-    /** Start the link flow. The returned code is entered by the user at plex.tv/link. */
+    /**
+     * Start the link flow. Non-strong pins return the short 4-character code the
+     * user types at plex.tv/link (strong pins return a long code meant only for
+     * the app.plex.tv/auth URL flow).
+     */
     suspend fun createPin(): Pin =
-        client.post("$baseUrl/api/v2/pins") { parameter("strong", "true") }.bodyOrThrow()
+        client.post("$baseUrl/api/v2/pins").bodyOrThrow()
 
     /** Poll until [Pin.authToken] is non-null (user completed linking) or the pin expires. */
     suspend fun getPin(id: Long): Pin =
