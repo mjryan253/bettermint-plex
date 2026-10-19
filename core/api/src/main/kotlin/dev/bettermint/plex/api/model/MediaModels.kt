@@ -40,6 +40,41 @@ data class Metadata(
     val playlistType: String? = null,
     val smart: Boolean? = null,
     @SerialName("Extras") val extras: ExtrasContainer? = null,
+    @SerialName("Media") val media: List<MediaVersion> = emptyList(),
+)
+
+/** One playable version of an item (e.g. the 4K file vs the 1080p file). */
+@Serializable
+data class MediaVersion(
+    val id: Long? = null,
+    val duration: Long? = null,
+    val bitrate: Int? = null,
+    val width: Int? = null,
+    val height: Int? = null,
+    val videoResolution: String? = null,
+    val videoCodec: String? = null,
+    val audioCodec: String? = null,
+    val audioChannels: Int? = null,
+    val container: String? = null,
+    @SerialName("Part") val parts: List<MediaPart> = emptyList(),
+) {
+    /** Short label for a version picker, e.g. "1080p h264 mkv". */
+    val label: String
+        get() = listOfNotNull(
+            videoResolution?.let { if (it.all(Char::isDigit)) "${it}p" else it },
+            videoCodec,
+            container,
+        ).joinToString(" ").ifBlank { "Version" }
+}
+
+@Serializable
+data class MediaPart(
+    val id: Long? = null,
+    val key: String? = null,
+    val duration: Long? = null,
+    val size: Long? = null,
+    val container: String? = null,
+    val file: String? = null,
 )
 
 @Serializable

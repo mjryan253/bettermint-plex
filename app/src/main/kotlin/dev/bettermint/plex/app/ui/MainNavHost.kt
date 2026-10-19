@@ -8,6 +8,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import dev.bettermint.plex.app.SessionState
 import dev.bettermint.plex.app.SessionViewModel
+import dev.bettermint.plex.app.player.PlayerScreen
 import dev.bettermint.plex.data.LibraryRepository
 
 object Routes {
@@ -21,6 +22,8 @@ object Routes {
     const val PLAYLISTS = "playlists"
     fun playlistItems(ratingKey: String, title: String) =
         "playlistItems/$ratingKey?title=${Uri.encode(title)}"
+    fun player(ratingKey: String, mediaIndex: Int = 0, startMs: Long = 0) =
+        "player/$ratingKey?mediaIndex=$mediaIndex&startMs=$startMs"
 }
 
 @Composable
@@ -28,8 +31,15 @@ fun MainNavHost(
     library: LibraryRepository,
     ready: SessionState.Ready,
     sessionViewModel: SessionViewModel,
+    openRatingKey: String? = null,
 ) {
     val nav: NavHostController = rememberNavController()
+
+    // Test hook: `adb shell am start ... --es openRatingKey <key>` jumps straight
+    // to that item's detail page, so device verification is deterministic.
+    androidx.compose.runtime.LaunchedEffect(openRatingKey) {
+        if (!openRatingKey.isNullOrBlank()) nav.navigate(Routes.details(openRatingKey))
+    }
 
     NavHost(navController = nav, startDestination = Routes.HOME) {
         composable(Routes.HOME) {
@@ -45,6 +55,14 @@ fun MainNavHost(
         }
         composable(Routes.SEARCH) {
             SearchScreen(library, nav)
+        }
+        composable("player/{ratingKey}?mediaIndex={mediaIndex}&startMs={startMs}") { entry ->
+            PlayerScreen(
+                library = library,
+                ratingKey = entry.arguments?.getString("ratingKey").orEmpty(),
+                mediaIndex = entry.arguments?.getString("mediaIndex")?.toIntOrNull() ?: 0,
+                startMs = entry.arguments?.getString("startMs")?.toLongOrNull() ?: 0L,
+            )
         }
         composable("collections/{key}?title={title}") { entry ->
             MetadataListScreen(

@@ -100,6 +100,15 @@ class ServerApi(
     }
 
     /**
+     * Direct-play stream URL for a media part. The token rides as a query
+     * parameter because the player's data source bypasses our client.
+     */
+    fun directPlayUrl(partKey: String): String {
+        val token = accessToken?.let { "?X-Plex-Token=$it" } ?: ""
+        return "$baseUrl$partKey$token"
+    }
+
+    /**
      * Server-side resized artwork URL for direct use by an image loader. The
      * token rides as a query parameter because the loader bypasses our client.
      */

@@ -42,7 +42,7 @@ class MainActivity : ComponentActivity() {
                         is SessionState.Ready -> {
                             val library = graph.library
                             if (library != null) {
-                                MainNavHost(library, s, viewModel)
+                                MainNavHost(library, s, viewModel, intent?.getStringExtra("openRatingKey"))
                             } else {
                                 LoadingScreen()
                             }

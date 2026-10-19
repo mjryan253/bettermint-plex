@@ -17,6 +17,53 @@
         "contentRating": "PG-13",
         "rating": 7.4,
         "audienceRating": 8.1,
+        "viewOffset": 1200000,
+        "Media": [
+          {
+            "id": 90001,
+            "duration": 7260000,
+            "bitrate": 20000,
+            "width": 3840,
+            "height": 2160,
+            "videoResolution": "4k",
+            "videoCodec": "hevc",
+            "audioCodec": "truehd",
+            "audioChannels": 8,
+            "container": "mkv",
+            "Part": [
+              {
+                "id": 91001,
+                "key": "/library/parts/91001/1700000000/file.mkv",
+                "duration": 7260000,
+                "size": 18000000000,
+                "container": "mkv",
+                "file": "/data/movies/Example Movie (1994)/Example.Movie.2160p.mkv"
+              }
+            ]
+          },
+          {
+            "id": 90002,
+            "duration": 7260000,
+            "bitrate": 2729,
+            "width": 1920,
+            "height": 1040,
+            "videoResolution": "1080",
+            "videoCodec": "h264",
+            "audioCodec": "aac",
+            "audioChannels": 6,
+            "container": "mp4",
+            "Part": [
+              {
+                "id": 91002,
+                "key": "/library/parts/91002/1700000000/file.mp4",
+                "duration": 7260000,
+                "size": 2000000000,
+                "container": "mp4",
+                "file": "/data/movies/Example Movie (1994)/Example.Movie.1080p.mp4"
+              }
+            ]
+          }
+        ],
         "Extras": {
           "size": 1,
           "Metadata": [

@@ -15,8 +15,11 @@ import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.AssistChip
+import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.FilterChip
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -40,6 +43,13 @@ private data class DetailData(
     val item: Metadata?,
     val children: List<Metadata>,
 )
+
+private fun formatMs(ms: Long): String {
+    val totalMinutes = ms / 60000
+    val hours = totalMinutes / 60
+    val minutes = totalMinutes % 60
+    return if (hours > 0) "${hours}h ${minutes}m" else "${minutes}m"
+}
 
 @Composable
 fun DetailScreen(
@@ -75,6 +85,7 @@ fun DetailScreen(
     val scope = rememberCoroutineScope()
     var showPlaylistPicker by remember { mutableStateOf(false) }
     var playlistMessage by remember { mutableStateOf<String?>(null) }
+    var versionIndex by remember(ratingKey) { mutableStateOf(0) }
 
     LazyColumn(
         Modifier.fillMaxSize().padding(horizontal = 24.dp),
@@ -100,6 +111,36 @@ fun DetailScreen(
                     }
                     item.summary?.takeIf { it.isNotBlank() }?.let {
                         Text(it, style = MaterialTheme.typography.bodyMedium, maxLines = 6)
+                    }
+                    if (item.media.isNotEmpty()) {
+                        if (item.media.size > 1) {
+                            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                item.media.forEachIndexed { index, version ->
+                                    FilterChip(
+                                        selected = index == versionIndex,
+                                        onClick = { versionIndex = index },
+                                        label = { Text(version.label) },
+                                    )
+                                }
+                            }
+                        }
+                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            val resumeMs = item.viewOffset ?: 0L
+                            if (resumeMs > 0) {
+                                Button(onClick = {
+                                    nav.navigate(
+                                        Routes.player(item.ratingKey.orEmpty(), versionIndex, resumeMs),
+                                    )
+                                }) { Text("Resume ${formatMs(resumeMs)}") }
+                                OutlinedButton(onClick = {
+                                    nav.navigate(Routes.player(item.ratingKey.orEmpty(), versionIndex))
+                                }) { Text("Start over") }
+                            } else {
+                                Button(onClick = {
+                                    nav.navigate(Routes.player(item.ratingKey.orEmpty(), versionIndex))
+                                }) { Text("Play") }
+                            }
+                        }
                     }
                     if (item.type == "movie" || item.type == "episode") {
                         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -146,8 +187,7 @@ fun DetailScreen(
                             PosterCard(
                                 item = extra,
                                 library = library,
-                                // Playback arrives in M3; detail view until then.
-                                onClick = { nav.navigate(Routes.details(extra.ratingKey.orEmpty())) },
+                                onClick = { nav.navigate(Routes.player(extra.ratingKey.orEmpty())) },
                             )
                         }
                     }

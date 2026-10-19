@@ -91,6 +91,36 @@ class ServerApiMediaTest {
     }
 
     @Test
+    fun `metadata detail parses media versions and parts`() = runTest {
+        val api = ServerApi(
+            testClient { respond(fixture("metadata_detail.json"), headers = jsonHeaders) },
+            "https://server.example:32400",
+            accessToken = null,
+        )
+        val detail = api.getMetadata("101")
+
+        val versions = detail?.media.orEmpty()
+        assertEquals(2, versions.size)
+        assertEquals("4k hevc mkv", versions[0].label)
+        assertEquals("1080p h264 mp4", versions[1].label)
+        assertEquals("/library/parts/91001/1700000000/file.mkv", versions[0].parts.first().key)
+        assertEquals(1200000L, detail?.viewOffset)
+    }
+
+    @Test
+    fun `directPlayUrl appends the part key and token`() {
+        val api = ServerApi(
+            testClient { respond("{}", headers = jsonHeaders) },
+            "https://server.example:32400",
+            accessToken = "server-token",
+        )
+        assertEquals(
+            "https://server.example:32400/library/parts/91002/1700000000/file.mp4?X-Plex-Token=server-token",
+            api.directPlayUrl("/library/parts/91002/1700000000/file.mp4"),
+        )
+    }
+
+    @Test
     fun `children parse seasons with watched counts`() = runTest {
         val api = ServerApi(
             testClient { respond(fixture("show_children.json"), headers = jsonHeaders) },
