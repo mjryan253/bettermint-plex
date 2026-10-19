@@ -17,10 +17,12 @@ class LibraryRepository(
         LibraryItemsPagingSource(api, sectionKey, sort, titleResolver)
 
     suspend fun hubs(): List<Hub> =
-        api.getHubs().map { it.copy(items = fixTitles(it.items)) }
+        api.getHubs().filterNot { it.isMusic() }
+            .map { it.copy(items = fixTitles(it.items)) }
 
     suspend fun search(query: String): List<Hub> =
         api.search(query).filter { it.items.isNotEmpty() }
+            .filterNot { it.isMusic() }
             .map { it.copy(items = fixTitles(it.items)) }
 
     suspend fun details(ratingKey: String): Metadata? {
@@ -42,6 +44,14 @@ class LibraryRepository(
 
     private suspend fun fixTitles(items: List<Metadata>): List<Metadata> =
         titleResolver?.resolve(items) ?: items
+
+    companion object {
+        /** Music is out of scope (Plexamp covers it); hide its hubs by default. */
+        private val musicTypes = setOf("artist", "album", "track")
+
+        private fun Hub.isMusic(): Boolean =
+            type in musicTypes || (items.isNotEmpty() && items.all { it.type in musicTypes })
+    }
 
     suspend fun addToPlaylist(playlistRatingKey: String, itemRatingKey: String) =
         api.addToPlaylist(playlistRatingKey, machineId, itemRatingKey)
