@@ -12,8 +12,12 @@ import dev.bettermint.plex.data.PlaybackRepository
 import dev.bettermint.plex.data.ServerRepository
 import dev.bettermint.plex.data.TitleResolver
 
-/** Manual DI: one place that builds and owns the app's singletons. */
-class AppGraph(context: Context) {
+/**
+ * Manual DI: one place that builds and owns the app's singletons.
+ * [engine] lets instrumented tests swap in a MockEngine so nothing
+ * touches the network; production passes nothing.
+ */
+class AppGraph(context: Context, engine: io.ktor.client.engine.HttpClientEngine? = null) {
 
     val authStore = AuthStore(context)
 
@@ -34,6 +38,7 @@ class AppGraph(context: Context) {
     val client = PlexClient.create(
         deviceInfo,
         tokenProvider = { accountToken },
+        engine = engine,
         logging = BuildConfig.DEBUG,
     )
 

@@ -13,6 +13,7 @@ android {
         targetSdk = libs.versions.android.targetSdk.get().toInt()
         versionCode = 1
         versionName = "0.1.0"
+        testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
     buildFeatures {
@@ -44,4 +45,11 @@ dependencies {
     implementation(libs.media3.exoplayer)
     implementation(libs.media3.exoplayer.hls)
     implementation(libs.media3.ui)
+
+    androidTestImplementation(platform(libs.compose.bom))
+    androidTestImplementation(libs.compose.ui.test.junit4)
+    androidTestImplementation(libs.androidx.test.ext.junit)
+    androidTestImplementation(libs.androidx.test.runner)
+    androidTestImplementation(libs.ktor.client.mock)
+    debugImplementation(libs.compose.ui.test.manifest)
 }

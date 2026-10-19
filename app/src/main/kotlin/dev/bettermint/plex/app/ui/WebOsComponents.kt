@@ -42,6 +42,8 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.takeOrElse
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import dev.bettermint.plex.app.ui.theme.LocalWebOsPalette
 
@@ -205,15 +207,17 @@ private fun DockIcon(tab: DockSpec, selected: Boolean, onClick: () -> Unit) {
                     )
                 }
                 .onFocusChanged { focused = it.isFocused }
+                // The sphere is the accessible element; inner glyphs are decorative.
+                .semantics { contentDescription = tab.label }
                 .clickable { onClick() },
         ) {
             when (tab.glyph) {
-                DockGlyph.Home -> Icon(Icons.Filled.Home, tab.label, tint = Color.White, modifier = Modifier.size(26.dp))
-                DockGlyph.Movies -> Icon(Icons.Filled.PlayArrow, tab.label, tint = Color.White, modifier = Modifier.size(28.dp))
+                DockGlyph.Home -> Icon(Icons.Filled.Home, null, tint = Color.White, modifier = Modifier.size(26.dp))
+                DockGlyph.Movies -> Icon(Icons.Filled.PlayArrow, null, tint = Color.White, modifier = Modifier.size(28.dp))
                 DockGlyph.Shows -> TvGlyph()
-                DockGlyph.Playlists -> Icon(Icons.AutoMirrored.Filled.List, tab.label, tint = Color.White, modifier = Modifier.size(26.dp))
-                DockGlyph.Search -> Icon(Icons.Filled.Search, tab.label, tint = Color.White, modifier = Modifier.size(26.dp))
-                DockGlyph.Settings -> Icon(Icons.Filled.Settings, tab.label, tint = Color.White, modifier = Modifier.size(24.dp))
+                DockGlyph.Playlists -> Icon(Icons.AutoMirrored.Filled.List, null, tint = Color.White, modifier = Modifier.size(26.dp))
+                DockGlyph.Search -> Icon(Icons.Filled.Search, null, tint = Color.White, modifier = Modifier.size(26.dp))
+                DockGlyph.Settings -> Icon(Icons.Filled.Settings, null, tint = Color.White, modifier = Modifier.size(24.dp))
             }
         }
     }
