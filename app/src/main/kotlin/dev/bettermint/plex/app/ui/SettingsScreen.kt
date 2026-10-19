@@ -1,18 +1,16 @@
 package dev.bettermint.plex.app.ui
 
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.produceState
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
@@ -31,56 +29,33 @@ private fun qualityLabel(kbps: Int): String =
 fun SettingsScreen(sessionViewModel: SessionViewModel) {
     val store = sessionViewModel.authStore()
     val scope = rememberCoroutineScope()
-    var prefs by androidx.compose.runtime.remember {
-        mutableStateOf<AuthStore.QualityPrefs?>(null)
-    }
-    val initial by produceState<AuthStore.QualityPrefs?>(initialValue = null) {
-        value = store.qualityPrefs()
-    }
-    val current = prefs ?: initial
+    var prefs by remember { mutableStateOf<AuthStore.QualityPrefs?>(null) }
+    LaunchedEffect(store) { prefs = store.qualityPrefs() }
 
-    // A maximized webOS card over the wallpaper, as throughout the app.
-    FloatingCard(Modifier.fillMaxSize().padding(horizontal = 20.dp, vertical = 14.dp)) {
-        Column(Modifier.fillMaxSize().padding(horizontal = 18.dp)) {
-            Spacer(Modifier.height(14.dp))
-            Text("Settings", style = MaterialTheme.typography.headlineMedium)
-            Spacer(Modifier.height(16.dp))
-            if (current == null) {
-                Text("Loading...")
-                return@Column
-            }
+    fun save(updated: AuthStore.QualityPrefs) {
+        prefs = updated
+        scope.launch { store.setQualityPrefs(updated) }
+    }
 
-            Text("Home network quality", style = MaterialTheme.typography.titleMedium)
-            Spacer(Modifier.height(8.dp))
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                qualitySteps.forEach { kbps ->
-                    LinenChip(
-                        selected = current.maxKbpsLocal == kbps,
-                        onClick = {
-                            val updated = current.copy(maxKbpsLocal = kbps)
-                            prefs = updated
-                            scope.launch { store.setQualityPrefs(updated) }
-                        },
-                        label = qualityLabel(kbps),
-                    )
-                }
-            }
-            Spacer(Modifier.height(16.dp))
-            Text("Remote quality", style = MaterialTheme.typography.titleMedium)
-            Spacer(Modifier.height(8.dp))
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                qualitySteps.forEach { kbps ->
-                    LinenChip(
-                        selected = current.maxKbpsRemote == kbps,
-                        onClick = {
-                            val updated = current.copy(maxKbpsRemote = kbps)
-                            prefs = updated
-                            scope.launch { store.setQualityPrefs(updated) }
-                        },
-                        label = qualityLabel(kbps),
-                    )
-                }
-            }
+    CardPage("Settings") {
+        val current = prefs
+        if (current == null) {
+            Text("Loading...")
+            return@CardPage
+        }
+        QualityRow("Home network quality", current.maxKbpsLocal) { save(current.copy(maxKbpsLocal = it)) }
+        Spacer(Modifier.height(16.dp))
+        QualityRow("Remote quality", current.maxKbpsRemote) { save(current.copy(maxKbpsRemote = it)) }
+    }
+}
+
+@Composable
+private fun QualityRow(label: String, selectedKbps: Int, onPick: (Int) -> Unit) {
+    Text(label, style = MaterialTheme.typography.titleMedium)
+    Spacer(Modifier.height(8.dp))
+    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        qualitySteps.forEach { kbps ->
+            LinenChip(selected = selectedKbps == kbps, onClick = { onPick(kbps) }, label = qualityLabel(kbps))
         }
     }
 }

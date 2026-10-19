@@ -1,7 +1,6 @@
 package dev.bettermint.plex.app.ui
 
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
@@ -18,6 +17,8 @@ import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.AlertDialog
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.FlowRowScope
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
@@ -37,6 +38,8 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavHostController
 import coil3.compose.AsyncImage
@@ -94,6 +97,17 @@ fun DetailScreen(
     var qualityOverride by remember(ratingKey) { mutableStateOf<Int?>(null) }
 
     val palette = LocalWebOsPalette.current
+
+    fun play(startMs: Long) = nav.navigate(
+        Routes.player(
+            item.ratingKey.orEmpty(),
+            versionIndex,
+            startMs,
+            audioId = audioId,
+            subId = subId,
+            maxKbps = qualityOverride,
+        ),
+    )
 
     BlurBackdrop(
         imageUrl = library.imageUrl(item.art ?: item.posterPath(), 64, 36),
@@ -155,10 +169,7 @@ fun DetailScreen(
                         }
                         if (item.media.isNotEmpty()) {
                             if (item.media.size > 1) {
-                                FlowRow(
-                                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                                    verticalArrangement = Arrangement.spacedBy(8.dp),
-                                ) {
+                                ChipRow {
                                     item.media.forEachIndexed { index, version ->
                                         LinenChip(
                                             selected = index == versionIndex,
@@ -173,10 +184,7 @@ fun DetailScreen(
                             val audioTracks = streams.filter { it.isAudio }
                             val subtitleTracks = streams.filter { it.isSubtitle }
                             if (audioTracks.size > 1) {
-                                FlowRow(
-                                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                                    verticalArrangement = Arrangement.spacedBy(8.dp),
-                                ) {
+                                ChipRow {
                                     audioTracks.forEach { track ->
                                         LinenChip(
                                             selected = audioId == track.id || (audioId == null && track.selected),
@@ -187,10 +195,7 @@ fun DetailScreen(
                                 }
                             }
                             if (subtitleTracks.isNotEmpty()) {
-                                FlowRow(
-                                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                                    verticalArrangement = Arrangement.spacedBy(8.dp),
-                                ) {
+                                ChipRow {
                                     LinenChip(
                                         selected = subId == null,
                                         onClick = { subId = null },
@@ -205,10 +210,7 @@ fun DetailScreen(
                                     }
                                 }
                             }
-                            FlowRow(
-                                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                                verticalArrangement = Arrangement.spacedBy(8.dp),
-                            ) {
+                            ChipRow {
                                 listOf(null, 8000, 4000, 2000).forEach { kbps ->
                                     LinenChip(
                                         selected = qualityOverride == kbps,
@@ -217,21 +219,8 @@ fun DetailScreen(
                                     )
                                 }
                             }
-                            FlowRow(
-                                horizontalArrangement = Arrangement.spacedBy(10.dp),
-                                verticalArrangement = Arrangement.spacedBy(8.dp),
-                            ) {
+                            ChipRow(spacing = 10.dp) {
                                 val resumeMs = item.viewOffset ?: 0L
-                                fun play(startMs: Long) = nav.navigate(
-                                    Routes.player(
-                                        item.ratingKey.orEmpty(),
-                                        versionIndex,
-                                        startMs,
-                                        audioId = audioId,
-                                        subId = subId,
-                                        maxKbps = qualityOverride,
-                                    ),
-                                )
                                 if (resumeMs > 0) {
                                     Button(onClick = { play(resumeMs) }, modifier = Modifier.initialFocus(item.ratingKey)) {
                                         Text("Resume ${formatMs(resumeMs)}")
@@ -260,10 +249,11 @@ fun DetailScreen(
                         playlistMessage?.let { Text(it, style = MaterialTheme.typography.bodySmall, color = palette.graphite) }
                     }
                 }
-                // Side-by-side on TV and tablets; stacked when the card is
-                // too narrow for a poster plus a readable text column.
-                BoxWithConstraints {
-                    if (maxWidth < 560.dp) {
+                // Side-by-side on TV and tablets; stacked when the card (screen
+                // minus the list's 24dp side padding) is under 560dp, too narrow
+                // for a poster plus a readable text column.
+                Box {
+                    if (LocalConfiguration.current.screenWidthDp < 608) {
                         Column(
                             verticalArrangement = Arrangement.spacedBy(16.dp),
                             modifier = Modifier.padding(20.dp),
@@ -286,19 +276,12 @@ fun DetailScreen(
 
         if (loaded.children.isNotEmpty()) {
             item {
-                Column {
-                    SectionHeader(if (item.type == "show") "Seasons" else "Episodes")
-                    Spacer(Modifier.height(10.dp))
-                    LazyRow(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                        items(loaded.children, key = { it.ratingKey ?: it.title }) { child ->
-                            PosterCard(
-                                item = child,
-                                library = library,
-                                onClick = { nav.navigate(Routes.details(child.ratingKey.orEmpty())) },
-                            )
-                        }
-                    }
-                }
+                PosterRow(
+                    title = if (item.type == "show") "Seasons" else "Episodes",
+                    items = loaded.children,
+                    library = library,
+                    onItem = { nav.navigate(Routes.details(it.ratingKey.orEmpty())) },
+                )
             }
         }
 
@@ -309,18 +292,7 @@ fun DetailScreen(
                     Spacer(Modifier.height(10.dp))
                     LazyRow(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                         items(item.chapters, key = { it.id ?: (it.startTimeOffset ?: 0L) }) { chapter ->
-                            Card(onClick = {
-                                nav.navigate(
-                                    Routes.player(
-                                        item.ratingKey.orEmpty(),
-                                        versionIndex,
-                                        chapter.startTimeOffset ?: 0L,
-                                        audioId = audioId,
-                                        subId = subId,
-                                        maxKbps = qualityOverride,
-                                    ),
-                                )
-                            }) {
+                            Card(onClick = { play(chapter.startTimeOffset ?: 0L) }) {
                                 AsyncImage(
                                     model = library.imageUrl(chapter.thumb, 240, 135),
                                     contentDescription = chapter.tag,
@@ -343,19 +315,12 @@ fun DetailScreen(
         val extras = item.extras?.items.orEmpty()
         if (extras.isNotEmpty()) {
             item {
-                Column {
-                    SectionHeader("Trailers & Extras")
-                    Spacer(Modifier.height(10.dp))
-                    LazyRow(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                        items(extras, key = { it.ratingKey ?: it.title }) { extra ->
-                            PosterCard(
-                                item = extra,
-                                library = library,
-                                onClick = { nav.navigate(Routes.player(extra.ratingKey.orEmpty())) },
-                            )
-                        }
-                    }
-                }
+                PosterRow(
+                    title = "Trailers & Extras",
+                    items = extras,
+                    library = library,
+                    onItem = { nav.navigate(Routes.player(it.ratingKey.orEmpty())) },
+                )
             }
         }
 
@@ -399,4 +364,15 @@ fun DetailScreen(
             },
         )
     }
+}
+
+/** A wrapping row of chips or buttons on the detail card. */
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+private fun ChipRow(spacing: Dp = 8.dp, content: @Composable FlowRowScope.() -> Unit) {
+    FlowRow(
+        horizontalArrangement = Arrangement.spacedBy(spacing),
+        verticalArrangement = Arrangement.spacedBy(8.dp),
+        content = content,
+    )
 }

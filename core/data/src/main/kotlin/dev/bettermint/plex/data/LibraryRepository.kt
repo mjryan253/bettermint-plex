@@ -16,7 +16,12 @@ class LibraryRepository(
     fun itemsPagingSource(sectionKey: String): PagingSource<Int, Metadata> =
         LibraryItemsPagingSource(api, sectionKey, titleResolver)
 
-    suspend fun hubs(): List<Hub> = clean(api.getHubs())
+    /** The latest [hubs] result, so Home can show it instantly on return while it refreshes. */
+    @Volatile
+    var lastHubs: List<Hub>? = null
+        private set
+
+    suspend fun hubs(): List<Hub> = clean(api.getHubs()).also { lastHubs = it }
 
     suspend fun search(query: String): List<Hub> = clean(api.search(query))
 

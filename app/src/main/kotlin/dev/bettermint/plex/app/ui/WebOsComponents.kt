@@ -7,6 +7,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -41,7 +42,6 @@ import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.drawscope.Stroke
-import androidx.compose.ui.graphics.takeOrElse
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
@@ -101,6 +101,32 @@ fun FloatingCard(modifier: Modifier = Modifier, content: @Composable () -> Unit)
         modifier = modifier,
         content = content,
     )
+}
+
+/**
+ * A maximized webOS card filling the screen above the dock: headline title
+ * with optional [trailing] controls, then [content]. Wallpaper shows at the margins.
+ */
+@Composable
+fun CardPage(
+    title: String,
+    trailing: @Composable () -> Unit = {},
+    content: @Composable ColumnScope.() -> Unit,
+) {
+    FloatingCard(Modifier.fillMaxSize().padding(horizontal = 20.dp, vertical = 14.dp)) {
+        Column(Modifier.fillMaxSize().padding(horizontal = 18.dp)) {
+            Spacer(Modifier.height(14.dp))
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Text(title, style = MaterialTheme.typography.headlineMedium)
+                trailing()
+            }
+            Spacer(Modifier.height(12.dp))
+            content()
+        }
+    }
 }
 
 /**
@@ -337,19 +363,13 @@ fun LinenChip(
 
 /**
  * webOS section header: label, hairline rule ending in a dot, as in the Pre's
- * email account groupings. Colors default to the dark backdrop; pass the
- * onLight variants when it sits on a linen card.
+ * email account groupings. Set [onLinen] when it sits on a light card.
  */
 @Composable
-fun SectionHeader(
-    title: String,
-    modifier: Modifier = Modifier,
-    labelColor: Color = Color.Unspecified,
-    ruleColor: Color = Color.Unspecified,
-) {
+fun SectionHeader(title: String, modifier: Modifier = Modifier, onLinen: Boolean = false) {
     val palette = LocalWebOsPalette.current
-    val label = labelColor.takeOrElse { MaterialTheme.colorScheme.onSurfaceVariant }
-    val rule = ruleColor.takeOrElse { palette.graphite.copy(alpha = 0.6f) }
+    val label = if (onLinen) palette.graphite else MaterialTheme.colorScheme.onSurfaceVariant
+    val rule = palette.graphite.copy(alpha = if (onLinen) 0.45f else 0.6f)
 
     Row(
         verticalAlignment = Alignment.CenterVertically,

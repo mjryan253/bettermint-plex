@@ -1,15 +1,9 @@
 package dev.bettermint.plex.app.ui
 
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.itemsIndexed
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -31,29 +25,23 @@ fun MetadataListScreen(
         value = runCatching { load() }.getOrDefault(emptyList())
     }
 
-    // A maximized webOS card: the grid rides a light panel, wallpaper at the margins.
-    FloatingCard(Modifier.fillMaxSize().padding(horizontal = 20.dp, vertical = 14.dp)) {
-        Column(Modifier.fillMaxSize().padding(horizontal = 18.dp)) {
-            Spacer(Modifier.height(14.dp))
-            Text(title, style = MaterialTheme.typography.headlineMedium)
-            Spacer(Modifier.height(12.dp))
-            when (val list = items) {
-                null -> Text("Loading...")
-                else -> {
-                    if (list.isEmpty()) Text("Nothing here yet. Items you add in Plex appear here.")
-                    LazyVerticalGrid(
-                        columns = GridCells.Adaptive(minSize = POSTER_WIDTH_DP.dp),
-                        horizontalArrangement = Arrangement.spacedBy(12.dp),
-                        verticalArrangement = Arrangement.spacedBy(12.dp),
-                    ) {
-                        itemsIndexed(list, key = { _, it -> it.ratingKey ?: it.title }) { index, item ->
-                            PosterCard(
-                                item = item,
-                                library = library,
-                                onClick = { onItem(item) },
-                                modifier = if (index == 0) Modifier.initialFocus() else Modifier,
-                            )
-                        }
+    CardPage(title) {
+        when (val list = items) {
+            null -> Text("Loading...")
+            else -> {
+                if (list.isEmpty()) Text("Nothing here yet. Items you add in Plex appear here.")
+                LazyVerticalGrid(
+                    columns = GridCells.Adaptive(minSize = POSTER_WIDTH_DP.dp),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp),
+                    verticalArrangement = Arrangement.spacedBy(12.dp),
+                ) {
+                    itemsIndexed(list, key = { _, it -> it.ratingKey ?: it.title }) { index, item ->
+                        PosterCard(
+                            item = item,
+                            library = library,
+                            onClick = { onItem(item) },
+                            modifier = if (index == 0) Modifier.initialFocus() else Modifier,
+                        )
                     }
                 }
             }

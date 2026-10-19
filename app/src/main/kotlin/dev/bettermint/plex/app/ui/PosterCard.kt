@@ -2,7 +2,9 @@ package dev.bettermint.plex.app.ui
 
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.border
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.getValue
@@ -12,14 +14,18 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.focusRestorer
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -106,6 +112,40 @@ fun PosterCard(
                     color = palette.graphite,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
+                )
+            }
+        }
+    }
+}
+
+/**
+ * A titled horizontal row of posters: home hubs, search results, seasons and
+ * extras. Set [onLinen] when the row sits on a light card; [focusFirst] gives
+ * the first poster initial D-pad focus. The focus restorer returns D-pad focus
+ * to the last-focused poster when re-entering the row.
+ */
+@Composable
+fun PosterRow(
+    title: String,
+    items: List<Metadata>,
+    library: LibraryRepository,
+    onItem: (Metadata) -> Unit,
+    onLinen: Boolean = false,
+    focusFirst: Boolean = false,
+) {
+    Column {
+        SectionHeader(title, onLinen = onLinen)
+        Spacer(Modifier.height(12.dp))
+        LazyRow(
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
+            modifier = Modifier.focusRestorer(),
+        ) {
+            itemsIndexed(items, key = { _, it -> it.ratingKey ?: it.title }) { index, item ->
+                PosterCard(
+                    item = item,
+                    library = library,
+                    onClick = { onItem(item) },
+                    modifier = if (focusFirst && index == 0) Modifier.initialFocus() else Modifier,
                 )
             }
         }
