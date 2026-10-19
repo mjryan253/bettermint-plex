@@ -15,7 +15,9 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.AlertDialog
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
@@ -81,7 +83,7 @@ fun DetailScreen(
     }
     val item = loaded.item
     if (item == null) {
-        Column(Modifier.fillMaxSize().padding(24.dp)) { Text("Item not found.") }
+        Column(Modifier.fillMaxSize().padding(24.dp)) { Text("This item is no longer on the server.") }
         return
     }
 
@@ -219,14 +221,22 @@ fun DetailScreen(
                                     Button(onClick = { play(resumeMs) }, modifier = Modifier.initialFocus(item.ratingKey)) {
                                         Text("Resume ${formatMs(resumeMs)}")
                                     }
-                                    OutlinedButton(onClick = { play(0) }) { Text("Start over") }
+                                    OutlinedButton(
+                                        onClick = { play(0) },
+                                        colors = ButtonDefaults.outlinedButtonColors(contentColor = palette.onLinen),
+                                        border = BorderStroke(1.dp, palette.graphite),
+                                    ) { Text("Start over") }
                                 } else {
                                     Button(onClick = { play(0) }, modifier = Modifier.initialFocus(item.ratingKey)) {
                                         Text("Play")
                                     }
                                 }
                                 if (item.type == "movie" || item.type == "episode") {
-                                    OutlinedButton(onClick = { showPlaylistPicker = true }) {
+                                    OutlinedButton(
+                                        onClick = { showPlaylistPicker = true },
+                                        colors = ButtonDefaults.outlinedButtonColors(contentColor = palette.onLinen),
+                                        border = BorderStroke(1.dp, palette.graphite),
+                                    ) {
                                         Text("Add to playlist")
                                     }
                                 }

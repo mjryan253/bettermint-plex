@@ -22,7 +22,12 @@ class LibraryRepositoryTest {
           {"title":"Albums","type":"album","hubIdentifier":"album","size":1,
            "Metadata":[{"ratingKey":"3","type":"album","title":"Abbey Road"}]},
           {"title":"Shows","type":"show","hubIdentifier":"show","size":1,
-           "Metadata":[{"ratingKey":"4","type":"show","title":"A Show"}]}
+           "Metadata":[{"ratingKey":"4","type":"show","title":"A Show"}]},
+          {"title":"Recent Playlists","type":"playlist","hubIdentifier":"home.playlists","size":2,
+           "Metadata":[
+             {"ratingKey":"5","type":"playlist","playlistType":"audio","title":"All Music"},
+             {"ratingKey":"6","type":"playlist","playlistType":"video","title":"Movie Night"}
+           ]}
         ]}}
     """.trimIndent()
 
@@ -40,12 +45,15 @@ class LibraryRepositoryTest {
     @Test
     fun `music hubs are hidden from search`() = runTest {
         val hubs = repository().search("beat")
-        assertEquals(listOf("Movies", "Shows"), hubs.map { it.title })
+        assertEquals(listOf("Movies", "Shows", "Recent Playlists"), hubs.map { it.title })
+        assertEquals(listOf("Movie Night"), hubs.last().items.map { it.title })
     }
 
     @Test
-    fun `music hubs are hidden from home`() = runTest {
+    fun `music hubs are hidden from home and audio playlists are dropped from mixed hubs`() = runTest {
         val hubs = repository().hubs()
-        assertEquals(listOf("Movies", "Shows"), hubs.map { it.title })
+        assertEquals(listOf("Movies", "Shows", "Recent Playlists"), hubs.map { it.title })
+        val playlists = hubs.last().items
+        assertEquals(listOf("Movie Night"), playlists.map { it.title })
     }
 }

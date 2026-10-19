@@ -78,7 +78,7 @@ fun ServerPickerScreen(state: SessionState.PickServer, onSelect: (PlexResource) 
         }
         Spacer(Modifier.height(16.dp))
         if (state.servers.isEmpty()) {
-            Text("No servers found on this account.")
+            Text("No servers on this account yet. Set up a Plex Media Server, then come back.")
         }
         LazyColumn(verticalArrangement = Arrangement.spacedBy(8.dp)) {
             itemsIndexed(state.servers, key = { _, s -> s.clientIdentifier }) { index, server ->

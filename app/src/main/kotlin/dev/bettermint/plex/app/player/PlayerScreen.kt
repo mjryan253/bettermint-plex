@@ -24,6 +24,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
@@ -95,7 +96,7 @@ fun PlayerScreen(
         return
     }
     if (exhausted) {
-        Text("Playback failed: no compatible method left for this file.")
+        Text("Playback failed for this file. Try a lower quality from its details page.")
         return
     }
 
@@ -296,29 +297,52 @@ private fun NextUpOverlay(
         onPlayNow()
     }
 
+    // The webOS panel treatment: a rounded charcoal card centered over a scrim,
+    // like the Pre's context menus.
+    val palette = dev.bettermint.plex.app.ui.theme.LocalWebOsPalette.current
     Column(
-        modifier = Modifier.fillMaxSize().background(Color(0xCC000000)).padding(48.dp),
+        modifier = Modifier.fillMaxSize().background(Color(0x99000000)).padding(48.dp),
         verticalArrangement = Arrangement.Center,
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
-        Text("Up next in ${seconds}s", style = MaterialTheme.typography.titleMedium)
-        Spacer(Modifier.height(16.dp))
-        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-            AsyncImage(
-                model = library.imageUrl(next.posterPath(), 200, 300),
-                contentDescription = null,
-                contentScale = ContentScale.Crop,
-                modifier = Modifier.width(100.dp).height(150.dp),
-            )
-            Column {
-                Text(next.displayTitle(), style = MaterialTheme.typography.headlineSmall)
-                next.displaySubtitle()?.let { Text(it, style = MaterialTheme.typography.bodyMedium) }
+        androidx.compose.material3.Surface(
+            color = palette.charcoal,
+            contentColor = palette.warmWhite,
+            shape = MaterialTheme.shapes.large,
+            border = androidx.compose.foundation.BorderStroke(1.dp, Color.White.copy(alpha = 0.10f)),
+            shadowElevation = 16.dp,
+        ) {
+            Column(
+                modifier = Modifier.padding(28.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+            ) {
+                Text(
+                    "Up next in ${seconds}s",
+                    style = MaterialTheme.typography.titleMedium,
+                    color = palette.warmWhite.copy(alpha = 0.8f),
+                )
+                Spacer(Modifier.height(16.dp))
+                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+                    AsyncImage(
+                        model = library.imageUrl(next.posterPath(), 200, 300),
+                        contentDescription = null,
+                        contentScale = ContentScale.Crop,
+                        modifier = Modifier
+                            .width(100.dp)
+                            .height(150.dp)
+                            .clip(MaterialTheme.shapes.small),
+                    )
+                    Column {
+                        Text(next.displayTitle(), style = MaterialTheme.typography.headlineSmall)
+                        next.displaySubtitle()?.let { Text(it, style = MaterialTheme.typography.bodyMedium) }
+                    }
+                }
+                Spacer(Modifier.height(24.dp))
+                Row(horizontalArrangement = Arrangement.spacedBy(12.dp), modifier = Modifier.wrapContentSize()) {
+                    Button(onClick = onPlayNow, modifier = Modifier.initialFocus(next.ratingKey)) { Text("Play now") }
+                    OutlinedButton(onClick = onCancel) { Text("Cancel") }
+                }
             }
-        }
-        Spacer(Modifier.height(24.dp))
-        Row(horizontalArrangement = Arrangement.spacedBy(12.dp), modifier = Modifier.wrapContentSize()) {
-            Button(onClick = onPlayNow, modifier = Modifier.initialFocus(next.ratingKey)) { Text("Play now") }
-            OutlinedButton(onClick = onCancel) { Text("Cancel") }
         }
     }
 }

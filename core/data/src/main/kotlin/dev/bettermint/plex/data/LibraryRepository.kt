@@ -18,12 +18,13 @@ class LibraryRepository(
 
     suspend fun hubs(): List<Hub> =
         api.getHubs().filterNot { it.isMusic() }
-            .map { it.copy(items = fixTitles(it.items)) }
+            .map { hub -> hub.copy(items = fixTitles(hub.items.filterNot { it.isMusicItem() })) }
+            .filter { it.items.isNotEmpty() }
 
     suspend fun search(query: String): List<Hub> =
-        api.search(query).filter { it.items.isNotEmpty() }
-            .filterNot { it.isMusic() }
-            .map { it.copy(items = fixTitles(it.items)) }
+        api.search(query).filterNot { it.isMusic() }
+            .map { hub -> hub.copy(items = fixTitles(hub.items.filterNot { it.isMusicItem() })) }
+            .filter { it.items.isNotEmpty() }
 
     suspend fun details(ratingKey: String): Metadata? {
         val item = api.getMetadata(ratingKey, includeExtras = true)
@@ -50,7 +51,11 @@ class LibraryRepository(
         private val musicTypes = setOf("artist", "album", "track")
 
         private fun Hub.isMusic(): Boolean =
-            type in musicTypes || (items.isNotEmpty() && items.all { it.type in musicTypes })
+            type in musicTypes || (items.isNotEmpty() && items.all { it.isMusicItem() })
+
+        /** Music tracks/albums/artists and audio playlists are out of scope. */
+        private fun Metadata.isMusicItem(): Boolean =
+            type in musicTypes || playlistType == "audio"
     }
 
     suspend fun addToPlaylist(playlistRatingKey: String, itemRatingKey: String) =

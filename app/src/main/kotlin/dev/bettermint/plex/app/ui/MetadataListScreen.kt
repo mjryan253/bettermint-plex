@@ -38,7 +38,7 @@ fun MetadataListScreen(
         when (val list = items) {
             null -> Text("Loading...")
             else -> {
-                if (list.isEmpty()) Text("Nothing here.")
+                if (list.isEmpty()) Text("Nothing here yet. Items you add in Plex appear here.")
                 LazyVerticalGrid(
                     columns = GridCells.Adaptive(minSize = POSTER_WIDTH_DP.dp),
                     horizontalArrangement = Arrangement.spacedBy(12.dp),
