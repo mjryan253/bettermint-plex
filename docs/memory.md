@@ -29,6 +29,8 @@ Full approved plan: `~/.claude/plans/https-github-com-morluto-rea-use-the-rea-ti
 
 - Every step gates on `git add` + `git commit` (relevant message, no AI attribution — repo rule). One commit per milestone minimum.
 - HITL Gate A after M2 (user tests sign-in + browse on their devices). HITL Gate B after M5 (user runs full playback suite on Fire Stick). M7 design direction needs user approval.
+- **Testing hardening gate (user decision 2026-10-19)**: once the app achieves all MVP goals (M0-M7), and BEFORE any optional/v2 features, design and implement rigorous testing: broaden JVM unit tests across repositories and decision logic, integration tests over recorded fixtures, and any other applicable testing (Compose UI smoke tests, scripted device matrix). Keep it rigorous but simple.
+- **Primary test device (2026-10-19)**: Basement TV, Fire TV Stick 4K (AFTMM) at 192.168.1.125:5555, now ADB-authorized. The stick at 192.168.1.87:5555 remains available.
 
 ## Status
 
@@ -56,3 +58,4 @@ Full approved plan: `~/.claude/plans/https-github-com-morluto-rea-use-the-rea-ti
 - **2026-10-18** — M0 scaffold: Gradle 9.8.1 wrapper, version catalog (AGP 9.4.1 / Kotlin 2.4.21 / Compose BOM 2026.09.00 / Media3 1.11.1 / Ktor 3.6.0 — cross-checked against jellyfin-androidtv master and Maven metadata), modules :core:api (pure JVM) / :core:data / :app, AGP 9 built-in Kotlin pattern (kotlin-gradle on buildscript classpath, kotlin.compose plugin in :app), dual LAUNCHER/LEANBACK_LAUNCHER manifest, local.properties → ~/Android/Sdk.
 - **2026-10-18** — M0 complete: build verified on host (test + assembleDebug green); hello APK deployed to Fire TV Stick 4K (AFTMM, Fire OS 6) via host adb, TV form factor + leanback launcher confirmed by screenshot. SDK gotchas documented above.
 - **2026-10-18** - M1 code complete: Plex API layer with header plugin and fixture tests; AuthStore/ServerRepository; session state machine with sign-in, server picker, libraries and Plex Home screens; deployed to Fire Stick, waiting on user's plex.tv/link entry. Fixed strong-pin bug (manual entry needs non-strong 4-char codes). CLAUDE.md updated by user: no em dashes ever (non-numerical).
+- **2026-10-19** - Basement TV stick (192.168.1.125:5555, AFTMM) authorized and made primary test device; app installed there, sign-in screen live. New gate recorded: rigorous-but-simple test suite after MVP completion, before optional/v2 features.
