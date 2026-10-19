@@ -11,6 +11,7 @@ import dev.bettermint.plex.data.LibraryRepository
 import dev.bettermint.plex.data.PlaybackRepository
 import dev.bettermint.plex.data.ServerRepository
 import dev.bettermint.plex.data.TitleResolver
+import okhttp3.OkHttpClient
 
 /**
  * Manual DI: one place that builds and owns the app's singletons.
@@ -28,11 +29,15 @@ class AppGraph(context: Context, engine: io.ktor.client.engine.HttpClientEngine?
         deviceName = "Bettermint on ${Build.MODEL ?: "Android"}",
     )
 
+    /** The app's single HTTP stack: Plex API calls and poster loading share its pool. */
+    val okHttp = OkHttpClient()
+
     val client = PlexClient.create(
         deviceInfo,
         tokenProvider = { authStore.accountToken },
         engine = engine,
         logging = BuildConfig.DEBUG,
+        okHttp = okHttp,
     )
 
     val plexTv = PlexTvApi(client)

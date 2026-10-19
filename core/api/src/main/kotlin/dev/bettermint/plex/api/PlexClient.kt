@@ -10,6 +10,7 @@ import io.ktor.client.plugins.logging.Logging
 import io.ktor.client.plugins.logging.SIMPLE
 import io.ktor.http.HttpHeaders
 import kotlinx.serialization.json.Json
+import okhttp3.OkHttpClient
 
 /**
  * Shared Ktor client carrying the full X-Plex-* header set on every request.
@@ -28,6 +29,7 @@ object PlexClient {
         tokenProvider: () -> String?,
         engine: HttpClientEngine? = null,
         logging: Boolean = false,
+        okHttp: OkHttpClient? = null,
     ): HttpClient {
         val plexHeaders = createClientPlugin("PlexHeaders") {
             onRequest { request, _ ->
@@ -53,6 +55,11 @@ object PlexClient {
                 }
             }
         }
-        return if (engine != null) HttpClient(engine, config) else HttpClient(OkHttp, config)
+        if (engine != null) return HttpClient(engine, config)
+        return HttpClient(OkHttp) {
+            // One shared OkHttpClient (and connection pool) for the whole app, when provided.
+            engine { okHttp?.let { preconfigured = it } }
+            config()
+        }
     }
 }
