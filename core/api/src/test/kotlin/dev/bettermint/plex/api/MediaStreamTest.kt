@@ -23,7 +23,7 @@ class MediaStreamTest {
     @Test
     fun `streams split by type`() = runTest {
         val streams = detail().media.first().parts.first().streams
-        assertEquals(1, streams.count { it.isVideo })
+        assertEquals(1, streams.count { it.streamType == 1 })
         assertEquals(2, streams.count { it.isAudio })
         assertEquals(2, streams.count { it.isSubtitle })
     }

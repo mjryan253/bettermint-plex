@@ -28,7 +28,7 @@ import io.ktor.http.isSuccess
  */
 class ServerApi(
     private val client: HttpClient,
-    val baseUrl: String,
+    private val baseUrl: String,
     private val accessToken: String?,
     private val deviceInfo: PlexDeviceInfo? = null,
 ) {
@@ -212,15 +212,6 @@ class ServerApi(
         }
     }
 
-    suspend fun unscrobble(ratingKey: String) {
-        runCatching {
-            get("$baseUrl/:/unscrobble") {
-                parameter("key", ratingKey)
-                parameter("identifier", "com.plexapp.plugins.library")
-            }
-        }
-    }
-
     /** Tear down a transcode session when playback stops or restarts. */
     suspend fun stopTranscode(sessionId: String) {
         runCatching {
@@ -229,10 +220,6 @@ class ServerApi(
             }
         }
     }
-
-    /** What the server actually decided for a running session (verification aid). */
-    suspend fun getTranscodeSessions(): String =
-        get("$baseUrl/transcode/sessions").bodyAsTextSafe()
 
     /**
      * Server-side resized artwork URL for direct use by an image loader. The

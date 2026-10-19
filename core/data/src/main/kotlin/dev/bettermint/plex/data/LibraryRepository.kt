@@ -9,12 +9,12 @@ import dev.bettermint.plex.api.model.Metadata
 /** Browse/search/detail reads against the connected server. */
 class LibraryRepository(
     val api: ServerApi,
-    val machineId: String,
+    private val machineId: String,
     private val titleResolver: TitleResolver? = null,
 ) {
 
-    fun itemsPagingSource(sectionKey: String, sort: String? = null): PagingSource<Int, Metadata> =
-        LibraryItemsPagingSource(api, sectionKey, sort, titleResolver)
+    fun itemsPagingSource(sectionKey: String): PagingSource<Int, Metadata> =
+        LibraryItemsPagingSource(api, sectionKey, titleResolver)
 
     suspend fun hubs(): List<Hub> =
         api.getHubs().filterNot { it.isMusic() }
@@ -68,13 +68,12 @@ class LibraryRepository(
 private class LibraryItemsPagingSource(
     private val api: ServerApi,
     private val sectionKey: String,
-    private val sort: String?,
     private val titleResolver: TitleResolver?,
 ) : PagingSource<Int, Metadata>() {
 
     override suspend fun load(params: LoadParams<Int>): LoadResult<Int, Metadata> = try {
         val start = params.key ?: 0
-        val page = api.getLibraryItems(sectionKey, start = start, size = params.loadSize, sort = sort)
+        val page = api.getLibraryItems(sectionKey, start = start, size = params.loadSize)
         val total = page.totalSize ?: page.size
         val next = start + page.items.size
         LoadResult.Page(

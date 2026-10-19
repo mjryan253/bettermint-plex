@@ -8,10 +8,8 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.ui.focus.focusRestorer
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
-import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.material3.AlertDialog
@@ -43,7 +41,7 @@ fun HomeScreen(
     nav: NavHostController,
 ) {
     val hubs by produceState<List<Hub>?>(initialValue = null, library) {
-        value = runCatching { library.hubs().filter { it.items.isNotEmpty() } }.getOrDefault(emptyList())
+        value = runCatching { library.hubs() }.getOrDefault(emptyList())
     }
     var pinPromptFor by remember { mutableStateOf<HomeUser?>(null) }
 

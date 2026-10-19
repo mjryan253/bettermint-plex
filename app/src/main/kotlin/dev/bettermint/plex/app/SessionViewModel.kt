@@ -34,7 +34,6 @@ class SessionViewModel(private val graph: AppGraph) : ViewModel() {
     val state: StateFlow<SessionState> = _state
 
     private var pinJob: Job? = null
-    private var serverApi: ServerApi? = null
 
     init {
         viewModelScope.launch { boot() }
@@ -106,7 +105,6 @@ class SessionViewModel(private val graph: AppGraph) : ViewModel() {
     }
 
     private suspend fun loadReady(api: ServerApi) {
-        serverApi = api
         val selected = graph.authStore.selectedServer()
         graph.library = LibraryRepository(
             api,

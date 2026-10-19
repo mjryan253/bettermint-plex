@@ -5,7 +5,6 @@ import dev.bettermint.plex.api.model.Metadata
 import dev.bettermint.plex.api.model.MetadataResponse
 import dev.bettermint.plex.api.model.Pin
 import dev.bettermint.plex.api.model.PlexResource
-import dev.bettermint.plex.api.model.PlexUser
 import dev.bettermint.plex.api.model.SwitchUserResponse
 import io.ktor.client.HttpClient
 import io.ktor.client.call.body
@@ -14,7 +13,6 @@ import io.ktor.client.request.parameter
 import io.ktor.client.request.post
 import io.ktor.client.statement.HttpResponse
 import io.ktor.client.statement.bodyAsText
-import io.ktor.http.HttpStatusCode
 import io.ktor.http.isSuccess
 
 /** plex.tv account endpoints (PIN auth, resources, Plex Home). */
@@ -35,19 +33,6 @@ class PlexTvApi(
     /** Poll until [Pin.authToken] is non-null (user completed linking) or the pin expires. */
     suspend fun getPin(id: Long): Pin =
         client.get("$baseUrl/api/v2/pins/$id").bodyOrThrow()
-
-    /**
-     * Token validity check. 200 → valid, 401 → invalid (discard token).
-     * Anything else is a transient error, NOT proof the token is bad.
-     */
-    suspend fun getUser(): TokenCheck {
-        val response = client.get("$baseUrl/api/v2/user")
-        return when {
-            response.status.isSuccess() -> TokenCheck.Valid(response.body())
-            response.status == HttpStatusCode.Unauthorized -> TokenCheck.Invalid
-            else -> TokenCheck.Error(response.status.value)
-        }
-    }
 
     /** All devices on the account; filter with [PlexResource.isServer] for servers. */
     suspend fun getResources(): List<PlexResource> =
@@ -76,12 +61,6 @@ class PlexTvApi(
         return client.get("$providerBaseUrl/library/metadata/$id")
             .bodyOrThrow<MetadataResponse>().mediaContainer.items.firstOrNull()
     }
-}
-
-sealed interface TokenCheck {
-    data class Valid(val user: PlexUser) : TokenCheck
-    data object Invalid : TokenCheck
-    data class Error(val httpStatus: Int) : TokenCheck
 }
 
 internal suspend inline fun <reified T> HttpResponse.bodyOrThrow(): T {

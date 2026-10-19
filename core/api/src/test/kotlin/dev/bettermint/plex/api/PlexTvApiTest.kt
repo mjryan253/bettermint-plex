@@ -104,13 +104,4 @@ class PlexTvApiTest {
         assertEquals(null, api.getCanonicalMetadata("imdb://tt0327597"))
     }
 
-    @Test
-    fun `getUser maps 200 to Valid and 401 to Invalid and 503 to Error`() = runTest {
-        suspend fun check(status: HttpStatusCode, body: String = "{}"): TokenCheck =
-            PlexTvApi(testClient { respond(body, status, jsonHeaders) }).getUser()
-
-        assertTrue(check(HttpStatusCode.OK, """{"id":1,"username":"u"}""") is TokenCheck.Valid)
-        assertEquals(TokenCheck.Invalid, check(HttpStatusCode.Unauthorized))
-        assertEquals(TokenCheck.Error(503), check(HttpStatusCode.ServiceUnavailable))
-    }
 }

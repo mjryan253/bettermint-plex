@@ -6,9 +6,7 @@ import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
 import java.util.UUID
-import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.runBlocking
 
 private val Context.dataStore by preferencesDataStore(name = "auth")
@@ -39,9 +37,7 @@ class AuthStore(private val context: Context) {
         }
     }
 
-    val accountToken: Flow<String?> = context.dataStore.data.map { it[Keys.accountToken] }
-
-    suspend fun currentAccountToken(): String? = accountToken.first()
+    suspend fun currentAccountToken(): String? = context.dataStore.data.first()[Keys.accountToken]
 
     suspend fun setAccountToken(token: String) {
         context.dataStore.edit { it[Keys.accountToken] = token }
@@ -75,7 +71,8 @@ class AuthStore(private val context: Context) {
             it[Keys.serverName] = server.name
             it[Keys.serverUri] = server.uri
             it[Keys.serverLocal] = server.localConnection.toString()
-            server.accessToken?.let { token -> it[Keys.serverToken] = token }
+            // A server without its own token must not inherit the previous server's.
+            if (server.accessToken != null) it[Keys.serverToken] = server.accessToken else it.remove(Keys.serverToken)
         }
     }
 

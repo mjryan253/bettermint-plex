@@ -125,7 +125,7 @@ fun MainNavHost(
                             tab.id == Routes.HOME -> Routes.HOME
                             tab.id.startsWith("lib/") -> {
                                 val key = tab.id.removePrefix("lib/")
-                                Routes.library(key, tabs.first { it.id == tab.id }.label)
+                                Routes.library(key, tab.label)
                             }
                             else -> tab.id
                         }

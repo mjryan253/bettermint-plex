@@ -109,7 +109,6 @@ data class MediaStream(
     val key: String? = null,
     val channels: Int? = null,
 ) {
-    val isVideo: Boolean get() = streamType == 1
     val isAudio: Boolean get() = streamType == 2
     val isSubtitle: Boolean get() = streamType == 3
     val label: String get() = extendedDisplayTitle ?: displayTitle ?: title ?: language ?: "Track $id"

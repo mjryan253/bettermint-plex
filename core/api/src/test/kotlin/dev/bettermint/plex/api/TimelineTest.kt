@@ -41,21 +41,15 @@ class TimelineTest {
     }
 
     @Test
-    fun `scrobble and unscrobble target the library identifier`() = runTest {
+    fun `scrobble targets the library identifier`() = runTest {
         var scrobbleUrl = ""
-        var unscrobbleUrl = ""
         ServerApi(
             testClient { r -> scrobbleUrl = r.url.toString(); respond("", headers = jsonHeaders) },
             "https://s:32400", "tok",
         ).scrobble("77150")
-        ServerApi(
-            testClient { r -> unscrobbleUrl = r.url.toString(); respond("", headers = jsonHeaders) },
-            "https://s:32400", "tok",
-        ).unscrobble("77150")
 
         assertTrue(scrobbleUrl.contains("/:/scrobble"))
         assertTrue(scrobbleUrl.contains("key=77150"))
         assertTrue(scrobbleUrl.contains("identifier=com.plexapp.plugins.library"))
-        assertTrue(unscrobbleUrl.contains("/:/unscrobble"))
     }
 }

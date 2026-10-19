@@ -110,7 +110,7 @@ class PlaybackRepository(
                 m.type == type && start != null && end != null && end > start && posMs >= start && posMs < end
             }
 
-        const val WATCHED_FRACTION = 0.9
+        private const val WATCHED_FRACTION = 0.9
 
         /** True once playback has passed the watched threshold. */
         fun isWatched(timeMs: Long, durationMs: Long): Boolean =

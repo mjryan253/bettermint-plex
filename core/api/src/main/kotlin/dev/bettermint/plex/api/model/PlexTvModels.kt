@@ -12,17 +12,6 @@ data class Pin(
     val expiresAt: String? = null,
 )
 
-/** GET https://plex.tv/api/v2/user */
-@Serializable
-data class PlexUser(
-    val id: Long,
-    val uuid: String? = null,
-    val username: String? = null,
-    val title: String? = null,
-    val email: String? = null,
-    val thumb: String? = null,
-)
-
 /** One entry of GET https://plex.tv/api/v2/resources */
 @Serializable
 data class PlexResource(

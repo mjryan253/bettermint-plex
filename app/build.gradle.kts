@@ -21,6 +21,11 @@ android {
         buildConfig = true
     }
 
+    // All UI text is English; drop library translations from resources.arsc.
+    androidResources {
+        localeFilters += listOf("en")
+    }
+
     buildTypes {
         release {
             isMinifyEnabled = true
@@ -32,7 +37,6 @@ android {
 
 dependencies {
     implementation(project(":core:data"))
-    implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.activity.compose)
     implementation(libs.androidx.lifecycle.viewmodel.compose)
     implementation(libs.androidx.navigation.compose)
