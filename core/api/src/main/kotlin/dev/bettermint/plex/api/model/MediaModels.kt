@@ -41,6 +41,7 @@ data class Metadata(
     val smart: Boolean? = null,
     @SerialName("Extras") val extras: ExtrasContainer? = null,
     @SerialName("Media") val media: List<MediaVersion> = emptyList(),
+    @SerialName("Chapter") val chapters: List<Chapter> = emptyList(),
 )
 
 /** One playable version of an item (e.g. the 4K file vs the 1080p file). */
@@ -75,6 +76,42 @@ data class MediaPart(
     val size: Long? = null,
     val container: String? = null,
     val file: String? = null,
+    @SerialName("Stream") val streams: List<MediaStream> = emptyList(),
+)
+
+/** streamType: 1 = video, 2 = audio, 3 = subtitle. */
+@Serializable
+data class MediaStream(
+    val id: Long,
+    val streamType: Int,
+    val codec: String? = null,
+    val index: Int? = null,
+    val language: String? = null,
+    val languageTag: String? = null,
+    val displayTitle: String? = null,
+    val extendedDisplayTitle: String? = null,
+    val title: String? = null,
+    val selected: Boolean = false,
+    val default: Boolean = false,
+    val forced: Boolean = false,
+    /** External subtitle sidecar key (e.g. /library/streams/123), null when embedded. */
+    val key: String? = null,
+    val channels: Int? = null,
+) {
+    val isVideo: Boolean get() = streamType == 1
+    val isAudio: Boolean get() = streamType == 2
+    val isSubtitle: Boolean get() = streamType == 3
+    val label: String get() = extendedDisplayTitle ?: displayTitle ?: title ?: language ?: "Track $id"
+}
+
+@Serializable
+data class Chapter(
+    val id: Long? = null,
+    val index: Int? = null,
+    val tag: String? = null,
+    val startTimeOffset: Long? = null,
+    val endTimeOffset: Long? = null,
+    val thumb: String? = null,
 )
 
 @Serializable

@@ -20,12 +20,14 @@ import io.ktor.http.isSuccess
 
 /**
  * Plex Media Server endpoints. [baseUrl] is the chosen connection URI,
- * [accessToken] the per-server token from the resources listing.
+ * [accessToken] the per-server token from the resources listing. [deviceInfo]
+ * is only needed for stream URLs, whose fetches bypass the Ktor header plugin.
  */
 class ServerApi(
     private val client: HttpClient,
     val baseUrl: String,
     private val accessToken: String?,
+    private val deviceInfo: PlexDeviceInfo? = null,
 ) {
 
     /** Unauthenticated; used to probe connection candidates. */
@@ -64,6 +66,7 @@ class ServerApi(
     suspend fun getMetadata(ratingKey: String, includeExtras: Boolean = false): Metadata? =
         get("$baseUrl/library/metadata/$ratingKey") {
             if (includeExtras) parameter("includeExtras", "1")
+            parameter("includeChapters", "1")
         }.bodyOrThrow<MetadataResponse>().mediaContainer.items.firstOrNull()
 
     /** Seasons of a show, or episodes of a season. */
@@ -107,6 +110,64 @@ class ServerApi(
         val token = accessToken?.let { "?X-Plex-Token=$it" } ?: ""
         return "$baseUrl$partKey$token"
     }
+
+    /**
+     * HLS stream URL for direct-stream or full transcode. Built from scratch
+     * (never from decision-response params; replayed params cause 400s per
+     * forum reports and the shape below is verified working on this server).
+     * All identity rides the query because ExoPlayer fetches without our client.
+     */
+    fun hlsStartUrl(
+        ratingKey: String,
+        sessionId: String,
+        mediaIndex: Int = 0,
+        partIndex: Int = 0,
+        directStream: Boolean = true,
+        startMs: Long = 0,
+        maxVideoBitrateKbps: Int? = null,
+        audioStreamId: Long? = null,
+        subtitleStreamId: Long? = null,
+        burnSubtitles: Boolean = false,
+    ): String = buildString {
+        append("$baseUrl/video/:/transcode/universal/start.m3u8")
+        append("?hasMDE=1")
+        append("&path=").append("/library/metadata/$ratingKey".encodeURLQueryComponent(encodeFull = true))
+        append("&mediaIndex=$mediaIndex")
+        append("&partIndex=$partIndex")
+        append("&protocol=hls")
+        append("&fastSeek=1")
+        append("&directPlay=0")
+        append("&directStream=").append(if (directStream) "1" else "0")
+        append("&session=$sessionId")
+        if (startMs > 0) append("&offset=").append(startMs / 1000)
+        maxVideoBitrateKbps?.let { append("&maxVideoBitrate=$it") }
+        audioStreamId?.let { append("&audioStreamID=$it") }
+        subtitleStreamId?.let { append("&subtitleStreamID=$it") }
+        if (burnSubtitles) append("&subtitles=burn")
+        deviceInfo?.let {
+            append("&X-Plex-Product=").append(it.product.encodeURLQueryComponent())
+            append("&X-Plex-Version=").append(it.version.encodeURLQueryComponent())
+            append("&X-Plex-Client-Identifier=").append(it.clientIdentifier.encodeURLQueryComponent())
+            append("&X-Plex-Platform=").append(it.platform.encodeURLQueryComponent())
+            append("&X-Plex-Platform-Version=").append(it.platformVersion.encodeURLQueryComponent())
+            append("&X-Plex-Device=").append(it.device.encodeURLQueryComponent())
+            append("&X-Plex-Device-Name=").append(it.deviceName.encodeURLQueryComponent())
+        }
+        accessToken?.let { append("&X-Plex-Token=$it") }
+    }
+
+    /** Tear down a transcode session when playback stops or restarts. */
+    suspend fun stopTranscode(sessionId: String) {
+        runCatching {
+            get("$baseUrl/video/:/transcode/universal/stop") {
+                parameter("session", sessionId)
+            }
+        }
+    }
+
+    /** What the server actually decided for a running session (verification aid). */
+    suspend fun getTranscodeSessions(): String =
+        get("$baseUrl/transcode/sessions").bodyAsTextSafe()
 
     /**
      * Server-side resized artwork URL for direct use by an image loader. The
