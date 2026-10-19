@@ -32,6 +32,8 @@ import dev.bettermint.plex.data.LibraryRepository
 const val POSTER_WIDTH_DP = 150
 const val POSTER_HEIGHT_DP = 225
 
+private val posterShape = RoundedCornerShape(12.dp)
+
 /** Display line for an item: episodes show their show, everything else its title. */
 fun Metadata.displayTitle(): String =
     if (type == "episode" && !grandparentTitle.isNullOrBlank()) grandparentTitle!! else title
@@ -61,10 +63,12 @@ fun PosterCard(
     val palette = LocalWebOsPalette.current
     var focused by remember { mutableStateOf(false) }
     val scale by animateFloatAsState(if (focused) 1.08f else 1f, label = "posterScale")
-    val shape = RoundedCornerShape(12.dp)
+    val imageUrl = remember(library, item.posterPath()) {
+        library.imageUrl(item.posterPath(), POSTER_WIDTH_DP * 2, POSTER_HEIGHT_DP * 2)
+    }
     Card(
         onClick = onClick,
-        shape = shape,
+        shape = posterShape,
         // Light tile with dark text, like webOS list panels; posters carry the color.
         colors = CardDefaults.cardColors(
             containerColor = Color(0xFFFCFBF8),
@@ -76,14 +80,14 @@ fun PosterCard(
             .onFocusChanged { focused = it.isFocused }
             .then(
                 if (focused) {
-                    Modifier.border(3.dp, MaterialTheme.colorScheme.primary, shape)
+                    Modifier.border(3.dp, MaterialTheme.colorScheme.primary, posterShape)
                 } else {
                     Modifier
                 },
             ),
     ) {
         AsyncImage(
-            model = library.imageUrl(item.posterPath(), POSTER_WIDTH_DP * 2, POSTER_HEIGHT_DP * 2),
+            model = imageUrl,
             contentDescription = item.displayTitle(),
             contentScale = ContentScale.Crop,
             modifier = Modifier.fillMaxWidth().aspectRatio(2f / 3f),

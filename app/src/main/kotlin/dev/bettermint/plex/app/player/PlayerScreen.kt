@@ -100,6 +100,9 @@ fun PlayerScreen(
         return
     }
 
+    val selectedSub = loaded.media.getOrNull(currentMediaIndex)?.parts?.firstOrNull()
+        ?.streams?.firstOrNull { it.id == currentSubId }
+
     val source by produceState<PlaybackRepository.Source?>(
         initialValue = null,
         loaded,
@@ -108,8 +111,6 @@ fun PlayerScreen(
         currentAudioId,
         currentSubId,
     ) {
-        val selectedSub = loaded.media.getOrNull(currentMediaIndex)?.parts?.firstOrNull()
-            ?.streams?.firstOrNull { it.id == currentSubId }
         value = runCatching {
             playback.source(
                 item = loaded,
@@ -133,8 +134,6 @@ fun PlayerScreen(
 
     val context = LocalContext.current
     val player = remember(active.url) {
-        val selectedSub = loaded.media.getOrNull(currentMediaIndex)?.parts?.firstOrNull()
-            ?.streams?.firstOrNull { it.id == currentSubId }
         val mediaItem = MediaItem.Builder().setUri(active.url).apply {
             if (active.method == Method.DirectPlay && selectedSub?.key != null) {
                 val subUrl = library.api.directPlayUrl(selectedSub.key!!)
@@ -176,21 +175,21 @@ fun PlayerScreen(
         }
     }
 
-    val playQueueItemId = queue.firstOrNull { it.ratingKey == currentKey }?.playQueueItemID
-
     LaunchedEffect(player, currentKey) {
         val key = loaded.ratingKey ?: return@LaunchedEffect
         var scrobbled = false
         var lastPos = active.seekToMs
         var lastDur = loaded.duration ?: 0L
+        // Read per tick: the play queue loads separately and may arrive after playback starts.
+        fun playQueueItemId() = queue.firstOrNull { it.ratingKey == key }?.playQueueItemID
         try {
             while (isActive) {
-                val (pos, dur, playing) = withContext(Dispatchers.Main) {
-                    Triple(player.currentPosition, player.duration, player.isPlaying)
-                }
+                val pos = player.currentPosition
+                val dur = player.duration
                 lastPos = pos
                 if (dur > 0) lastDur = dur
-                playback.reportProgress(key, if (playing) "playing" else "paused", pos, lastDur, playQueueItemId)
+                val state = if (player.isPlaying) "playing" else "paused"
+                playback.reportProgress(key, state, pos, lastDur, playQueueItemId())
                 if (!scrobbled && PlaybackRepository.isWatched(pos, lastDur)) {
                     scrobbled = true
                     playback.markWatched(key)
@@ -199,7 +198,7 @@ fun PlayerScreen(
             }
         } finally {
             withContext(NonCancellable) {
-                runCatching { playback.reportProgress(key, "stopped", lastPos, lastDur, playQueueItemId) }
+                runCatching { playback.reportProgress(key, "stopped", lastPos, lastDur, playQueueItemId()) }
             }
         }
     }
@@ -209,6 +208,7 @@ fun PlayerScreen(
     var skipTarget by remember(currentKey) { mutableStateOf<Long?>(null) }
     LaunchedEffect(player, currentKey, loaded.markers) {
         val markers = loaded.markers
+        if (markers.isEmpty()) return@LaunchedEffect
         while (isActive) {
             // During an autoplay advance, currentKey moves to the next item
             // before its details/player load, so the player here may still be
@@ -218,7 +218,7 @@ fun PlayerScreen(
                 delay(750)
                 continue
             }
-            val pos = withContext(Dispatchers.Main) { player.currentPosition }
+            val pos = player.currentPosition
             skipTarget = PlaybackRepository.markerAt(markers, "intro", pos)?.endTimeOffset
             if (nextUp == null && PlaybackRepository.markerAt(markers, "credits", pos) != null) {
                 PlaybackRepository.nextInQueue(queue, currentKey)?.let { nextUp = it }
@@ -238,6 +238,8 @@ fun PlayerScreen(
     AndroidView(
         factory = { ctx ->
             PlayerView(ctx).apply {
+                // Letterbox on black; the app wallpaper is not drawn under video.
+                setBackgroundColor(android.graphics.Color.BLACK)
                 useController = true
                 controllerShowTimeoutMs = 3500
                 keepScreenOn = true

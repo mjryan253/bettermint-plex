@@ -10,6 +10,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
+import dev.bettermint.plex.BuildConfig
 import dev.bettermint.plex.app.ui.FailedScreen
 import dev.bettermint.plex.app.ui.LoadingScreen
 import dev.bettermint.plex.app.ui.MainNavHost
@@ -42,15 +43,18 @@ class MainActivity : ComponentActivity() {
                         is SessionState.Ready -> {
                             val library = graph.library
                             if (library != null) {
-                                val testPlayKey = intent?.getStringExtra("testPlayKey")
+                                // Device-test hooks; debug builds only, since the activity
+                                // is exported and any app could otherwise launch playback.
+                                val hooks = if (BuildConfig.DEBUG) intent else null
+                                val testPlayKey = hooks?.getStringExtra("testPlayKey")
                                 val testPlay = testPlayKey?.let {
                                     dev.bettermint.plex.app.ui.TestPlay(
                                         ratingKey = it,
-                                        startMs = intent?.getLongExtra("testStartMs", 0L) ?: 0L,
-                                        maxKbps = intent?.getIntExtra("testMaxKbps", 0)?.takeIf { k -> k > 0 },
+                                        startMs = hooks.getLongExtra("testStartMs", 0L),
+                                        maxKbps = hooks.getIntExtra("testMaxKbps", 0).takeIf { k -> k > 0 },
                                     )
                                 }
-                                MainNavHost(library, s, viewModel, intent?.getStringExtra("openRatingKey"), testPlay)
+                                MainNavHost(library, s, viewModel, hooks?.getStringExtra("openRatingKey"), testPlay)
                             } else {
                                 LoadingScreen()
                             }

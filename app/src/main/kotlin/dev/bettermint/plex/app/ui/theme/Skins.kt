@@ -109,6 +109,8 @@ private fun webOsColorScheme(p: WebOsPalette) = darkColorScheme(
     surface = p.charcoal,
     onSurface = p.warmWhite,
     surfaceVariant = p.charcoalHigh,
+    // Default Cards (chapters, server picker) read this; unset, M3 falls back to purple-grey.
+    surfaceContainerHighest = p.charcoalHigh,
     onSurfaceVariant = Color(0xFFB8B5B0),
     outline = Color(0xFF55534F),
     error = Color(0xFFE88080),

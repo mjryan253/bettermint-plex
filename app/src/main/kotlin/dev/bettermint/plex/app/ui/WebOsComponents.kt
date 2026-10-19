@@ -34,7 +34,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.draw.drawWithCache
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
@@ -42,10 +42,13 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.takeOrElse
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import dev.bettermint.plex.app.ui.theme.LocalWebOsPalette
+import dev.bettermint.plex.app.ui.theme.WebOsPalette
 
 /**
  * The webOS wallpaper: every screen floats over a photographic-feeling dusk
@@ -58,25 +61,26 @@ fun WebOsWallpaper(modifier: Modifier = Modifier) {
     Box(
         modifier
             .fillMaxSize()
-            .drawBehind {
-                drawRect(
-                    Brush.verticalGradient(
-                        0.00f to Color(0xFF0A101C),
-                        0.42f to Color(0xFF14273E),
-                        0.68f to Color(0xFF28567C),
-                        0.76f to Color(0xFF3A79A4),
-                        0.84f to Color(0xFF1A2A38),
-                        1.00f to Color(0xFF090D12),
-                    ),
+            // Brushes are built once per size, not on every frame.
+            .drawWithCache {
+                val sky = Brush.verticalGradient(
+                    0.00f to Color(0xFF0A101C),
+                    0.42f to Color(0xFF14273E),
+                    0.68f to Color(0xFF28567C),
+                    0.76f to Color(0xFF3A79A4),
+                    0.84f to Color(0xFF1A2A38),
+                    1.00f to Color(0xFF090D12),
                 )
                 // Atmospheric glow sitting on the horizon line.
-                drawRect(
-                    Brush.radialGradient(
-                        listOf(Color(0x5560AFE0), Color.Transparent),
-                        center = Offset(size.width * 0.5f, size.height * 0.74f),
-                        radius = size.width * 0.72f,
-                    ),
+                val glow = Brush.radialGradient(
+                    listOf(Color(0x5560AFE0), Color.Transparent),
+                    center = Offset(size.width * 0.5f, size.height * 0.74f),
+                    radius = size.width * 0.72f,
                 )
+                onDrawBehind {
+                    drawRect(sky)
+                    drawRect(glow)
+                }
             },
     )
 }
@@ -99,8 +103,22 @@ fun FloatingCard(modifier: Modifier = Modifier, content: @Composable () -> Unit)
     )
 }
 
-/** Which glossy icon a dock entry shows. */
-enum class DockGlyph { Home, Movies, Shows, Playlists, Search, Settings }
+/**
+ * Which glossy icon a dock entry shows: sphere tint (echoing the colorful
+ * webOS launcher icons) and inner glyph. Shows has no core icon, so it draws
+ * [TvGlyph] instead.
+ */
+enum class DockGlyph(tint: Color, val icon: ImageVector?, val iconSize: Dp) {
+    Home(Color(0xFFE8A33D), Icons.Filled.Home, 26.dp),
+    Movies(Color(0xFF3D8EDB), Icons.Filled.PlayArrow, 28.dp),
+    Shows(Color(0xFF43A074), null, 24.dp),
+    Playlists(Color(0xFF8A6FC9), Icons.AutoMirrored.Filled.List, 26.dp),
+    Search(Color(0xFF5B7E99), Icons.Filled.Search, 26.dp),
+    Settings(Color(0xFF6E6B66), Icons.Filled.Settings, 24.dp),
+    ;
+
+    val sphere: Brush = Brush.verticalGradient(listOf(tint.lighten(0.35f), tint, tint.darken(0.35f)))
+}
 
 /** One destination in the Quick Launch dock. */
 data class DockSpec(val id: String, val label: String, val glyph: DockGlyph)
@@ -145,21 +163,10 @@ fun WebOsDock(
     }
 }
 
-/** Per-glyph sphere tints, echoing the colorful webOS launcher icons. */
-private fun glyphTint(glyph: DockGlyph): Color = when (glyph) {
-    DockGlyph.Home -> Color(0xFFE8A33D)
-    DockGlyph.Movies -> Color(0xFF3D8EDB)
-    DockGlyph.Shows -> Color(0xFF43A074)
-    DockGlyph.Playlists -> Color(0xFF8A6FC9)
-    DockGlyph.Search -> Color(0xFF5B7E99)
-    DockGlyph.Settings -> Color(0xFF6E6B66)
-}
-
 @Composable
 private fun DockIcon(tab: DockSpec, selected: Boolean, onClick: () -> Unit) {
     val palette = LocalWebOsPalette.current
     var focused by remember { mutableStateOf(false) }
-    val tint = glyphTint(tab.glyph)
     Column(horizontalAlignment = Alignment.CenterHorizontally) {
         // Reserved label slot so focus never shifts the shelf's layout.
         Box(Modifier.height(30.dp), contentAlignment = Alignment.Center) {
@@ -181,11 +188,7 @@ private fun DockIcon(tab: DockSpec, selected: Boolean, onClick: () -> Unit) {
             modifier = Modifier
                 .size(48.dp)
                 .clip(CircleShape)
-                .background(
-                    Brush.verticalGradient(
-                        listOf(tint.lighten(0.35f), tint, tint.darken(0.35f)),
-                    ),
-                )
+                .background(tab.glyph.sphere)
                 .border(
                     width = 2.dp,
                     color = when {
@@ -195,29 +198,26 @@ private fun DockIcon(tab: DockSpec, selected: Boolean, onClick: () -> Unit) {
                     },
                     shape = CircleShape,
                 )
-                .drawBehind {
+                .drawWithCache {
                     // Glass highlight across the upper half of the sphere.
-                    drawOval(
-                        Brush.verticalGradient(
-                            listOf(Color.White.copy(alpha = 0.50f), Color.White.copy(alpha = 0.04f)),
-                            endY = size.height * 0.52f,
-                        ),
-                        topLeft = Offset(size.width * 0.14f, size.height * 0.05f),
-                        size = Size(size.width * 0.72f, size.height * 0.46f),
+                    val gloss = Brush.verticalGradient(
+                        listOf(Color.White.copy(alpha = 0.50f), Color.White.copy(alpha = 0.04f)),
+                        endY = size.height * 0.52f,
                     )
+                    val topLeft = Offset(size.width * 0.14f, size.height * 0.05f)
+                    val ovalSize = Size(size.width * 0.72f, size.height * 0.46f)
+                    onDrawBehind { drawOval(gloss, topLeft = topLeft, size = ovalSize) }
                 }
                 .onFocusChanged { focused = it.isFocused }
                 // The sphere is the accessible element; inner glyphs are decorative.
                 .semantics { contentDescription = tab.label }
                 .clickable { onClick() },
         ) {
-            when (tab.glyph) {
-                DockGlyph.Home -> Icon(Icons.Filled.Home, null, tint = Color.White, modifier = Modifier.size(26.dp))
-                DockGlyph.Movies -> Icon(Icons.Filled.PlayArrow, null, tint = Color.White, modifier = Modifier.size(28.dp))
-                DockGlyph.Shows -> TvGlyph()
-                DockGlyph.Playlists -> Icon(Icons.AutoMirrored.Filled.List, null, tint = Color.White, modifier = Modifier.size(26.dp))
-                DockGlyph.Search -> Icon(Icons.Filled.Search, null, tint = Color.White, modifier = Modifier.size(26.dp))
-                DockGlyph.Settings -> Icon(Icons.Filled.Settings, null, tint = Color.White, modifier = Modifier.size(24.dp))
+            val icon = tab.glyph.icon
+            if (icon != null) {
+                Icon(icon, null, tint = Color.White, modifier = Modifier.size(tab.glyph.iconSize))
+            } else {
+                TvGlyph()
             }
         }
     }
@@ -297,6 +297,9 @@ fun BlurBackdrop(imageUrl: String?, modifier: Modifier = Modifier) {
     }
 }
 
+private val chipSelected = WebOsPalette().glow.let { Brush.verticalGradient(listOf(it, it.copy(alpha = 0.8f))) }
+private val chipIdle = Brush.verticalGradient(listOf(Color.White.copy(alpha = 0.55f), Color.White.copy(alpha = 0.25f)))
+
 /**
  * A selectable pill for use on the light linen card surface, where the default
  * dark-theme chip colors would be unreadable. Selected pills fill with the
@@ -314,15 +317,7 @@ fun LinenChip(
     Box(
         modifier = modifier
             .clip(CircleShape)
-            .background(
-                if (selected) {
-                    Brush.verticalGradient(listOf(palette.glow, palette.glow.copy(alpha = 0.8f)))
-                } else {
-                    Brush.verticalGradient(
-                        listOf(Color.White.copy(alpha = 0.55f), Color.White.copy(alpha = 0.25f)),
-                    )
-                },
-            )
+            .background(if (selected) chipSelected else chipIdle)
             .border(
                 width = if (focused) 2.dp else 1.dp,
                 color = if (focused) palette.glow else palette.graphite.copy(alpha = 0.45f),

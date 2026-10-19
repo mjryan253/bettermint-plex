@@ -7,9 +7,7 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.scaleIn
 import androidx.compose.animation.scaleOut
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
-import androidx.compose.ui.graphics.Color
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.systemBarsPadding
@@ -109,7 +107,8 @@ fun MainNavHost(
     val showBar = selectedTabId != null
 
     Box(modifier = Modifier.fillMaxSize()) {
-        WebOsWallpaper()
+        // Video covers the whole screen, so skip painting the wallpaper under it.
+        if (!route.startsWith("player/")) WebOsWallpaper()
         // Wallpaper runs edge-to-edge; content stays clear of the phone's
         // status and navigation bars (no-op on TV, which has no insets).
         Column(modifier = Modifier.fillMaxSize().systemBarsPadding()) {
@@ -189,8 +188,6 @@ private fun MainNavGraph(
             if (playback == null) {
                 LoadingScreen()
             } else {
-                // Video letterboxes against black, not the wallpaper.
-                Box(Modifier.fillMaxSize().background(Color.Black))
                 PlayerScreen(
                     library = library,
                     playback = playback,
