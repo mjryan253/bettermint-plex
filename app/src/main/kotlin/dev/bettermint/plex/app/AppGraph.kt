@@ -9,6 +9,7 @@ import dev.bettermint.plex.api.PlexTvApi
 import dev.bettermint.plex.data.AuthStore
 import dev.bettermint.plex.data.LibraryRepository
 import dev.bettermint.plex.data.ServerRepository
+import dev.bettermint.plex.data.TitleResolver
 
 /** Manual DI: one place that builds and owns the app's singletons. */
 class AppGraph(context: Context) {
@@ -38,6 +39,8 @@ class AppGraph(context: Context) {
     val plexTv = PlexTvApi(client)
 
     val serverRepository = ServerRepository(client, plexTv, authStore)
+
+    val titleResolver = TitleResolver(plexTv)
 
     /** Set by SessionViewModel once a server connection is established. */
     @Volatile

@@ -1,6 +1,8 @@
 package dev.bettermint.plex.api
 
 import dev.bettermint.plex.api.model.HomeUsers
+import dev.bettermint.plex.api.model.Metadata
+import dev.bettermint.plex.api.model.MetadataResponse
 import dev.bettermint.plex.api.model.Pin
 import dev.bettermint.plex.api.model.PlexResource
 import dev.bettermint.plex.api.model.PlexUser
@@ -16,7 +18,11 @@ import io.ktor.http.HttpStatusCode
 import io.ktor.http.isSuccess
 
 /** plex.tv account endpoints (PIN auth, resources, Plex Home). */
-class PlexTvApi(private val client: HttpClient, private val baseUrl: String = "https://plex.tv") {
+class PlexTvApi(
+    private val client: HttpClient,
+    private val baseUrl: String = "https://plex.tv",
+    private val providerBaseUrl: String = "https://metadata.provider.plex.tv",
+) {
 
     /**
      * Start the link flow. Non-strong pins return the short 4-character code the
@@ -58,6 +64,18 @@ class PlexTvApi(private val client: HttpClient, private val baseUrl: String = "h
         client.post("$baseUrl/api/v2/home/users/$uuid/switch") {
             if (pin != null) parameter("pin", pin)
         }.bodyOrThrow()
+
+    /**
+     * Canonical metadata from the Plex Discover provider for a `plex://` guid.
+     * This is where Plex Web gets clean titles when a server item's own title
+     * is stale (e.g. still the filename). Returns null for non-plex guids.
+     */
+    suspend fun getCanonicalMetadata(plexGuid: String): Metadata? {
+        val id = plexGuid.substringAfter("plex://", "").substringAfterLast('/')
+        if (id.isBlank()) return null
+        return client.get("$providerBaseUrl/library/metadata/$id")
+            .bodyOrThrow<MetadataResponse>().mediaContainer.items.firstOrNull()
+    }
 }
 
 sealed interface TokenCheck {

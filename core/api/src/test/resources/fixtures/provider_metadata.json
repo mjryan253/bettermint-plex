@@ -1,0 +1,17 @@
+{
+  "MediaContainer": {
+    "size": 1,
+    "identifier": "tv.plex.provider.metadata",
+    "Metadata": [
+      {
+        "ratingKey": "5d77683c7e9a3c0020c6e4cb",
+        "key": "/library/metadata/5d77683c7e9a3c0020c6e4cb",
+        "guid": "plex://movie/5d77683c7e9a3c0020c6e4cb",
+        "type": "movie",
+        "title": "Coraline",
+        "year": 2009,
+        "summary": "A film about examples."
+      }
+    ]
+  }
+}

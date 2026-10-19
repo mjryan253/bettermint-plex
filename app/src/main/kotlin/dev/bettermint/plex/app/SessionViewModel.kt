@@ -107,7 +107,11 @@ class SessionViewModel(private val graph: AppGraph) : ViewModel() {
     private suspend fun loadReady(api: ServerApi) {
         serverApi = api
         val selected = graph.authStore.selectedServer()
-        graph.library = LibraryRepository(api, machineId = selected?.machineId ?: "")
+        graph.library = LibraryRepository(
+            api,
+            machineId = selected?.machineId ?: "",
+            titleResolver = graph.titleResolver,
+        )
         val libraries = api.getLibrarySections()
         val users = runCatching { graph.plexTv.getHomeUsers().users }.getOrDefault(emptyList())
         _state.value = SessionState.Ready(selected?.name ?: "Plex Server", libraries, users)

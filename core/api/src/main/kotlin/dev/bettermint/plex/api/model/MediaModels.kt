@@ -11,6 +11,7 @@ import kotlinx.serialization.Serializable
 data class Metadata(
     val ratingKey: String? = null,
     val key: String? = null,
+    val guid: String? = null,
     val type: String? = null,
     val title: String = "",
     val summary: String? = null,

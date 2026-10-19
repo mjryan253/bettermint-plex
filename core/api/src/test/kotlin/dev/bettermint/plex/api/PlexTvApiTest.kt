@@ -83,6 +83,28 @@ class PlexTvApiTest {
     }
 
     @Test
+    fun `canonical metadata fetches the discover provider by guid id`() = runTest {
+        var url = ""
+        val api = PlexTvApi(testClient { request ->
+            url = request.url.toString()
+            respond(fixture("provider_metadata.json"), headers = jsonHeaders)
+        })
+        val item = api.getCanonicalMetadata("plex://movie/5d77683c7e9a3c0020c6e4cb")
+
+        assertEquals(
+            "https://metadata.provider.plex.tv/library/metadata/5d77683c7e9a3c0020c6e4cb",
+            url,
+        )
+        assertEquals("Coraline", item?.title)
+    }
+
+    @Test
+    fun `canonical metadata returns null for non-plex guids`() = runTest {
+        val api = PlexTvApi(testClient { respond(fixture("provider_metadata.json"), headers = jsonHeaders) })
+        assertEquals(null, api.getCanonicalMetadata("imdb://tt0327597"))
+    }
+
+    @Test
     fun `getUser maps 200 to Valid and 401 to Invalid and 503 to Error`() = runTest {
         suspend fun check(status: HttpStatusCode, body: String = "{}"): TokenCheck =
             PlexTvApi(testClient { respond(body, status, jsonHeaders) }).getUser()
