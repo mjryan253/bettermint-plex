@@ -32,9 +32,15 @@ Full approved plan: `~/.claude/plans/https-github-com-morluto-rea-use-the-rea-ti
 
 ## Status
 
-- **Milestone**: Step -1 / M0 in progress.
-- Git repo initialized (branch `main`); GitHub repo creation next; toolchain install (host apt) next; Gradle scaffold not started.
+- **Milestone**: M0 in progress — scaffold written, build NOT yet verified.
+- Git repo initialized (branch `main`). Gradle scaffold complete: 3 modules, version catalog, wrapper (Gradle 9.8.1, jar from gradle/gradle v9.8.1 tag), dual-launcher manifest, hello MainActivity with TV/mobile detection, placeholder icon + TV banner drawables.
+- Module deps deliberately minimal (unused deps trimmed per CLAUDE.md); full pinned versions live in `gradle/libs.versions.toml` and get wired per milestone.
+- **Blocked on user (host commands needing password/permission):**
+  1. `sudo apt update && sudo apt install -y openjdk-21-jdk sdkmanager git zip unzip curl`, then `sdkmanager --install "platform-tools" "platforms;android-37" "build-tools;37.0.0"` + `sdkmanager --licenses` (ANDROID_HOME=~/Android/Sdk).
+  2. `gh repo create bettermint-plex --public --source . --remote origin` from the repo root (sandbox permission system blocked creating a public repo; gh is authed as mjryan253).
+- Next after unblock: run `./gradlew :core:api:test :app:assembleDebug` on host, fix any AGP 9 wiring issues, deploy to phone + Fire Stick, then M0 milestone commit.
 
 ## Change log
 
 - **2026-10-18** — Project planned and approved (research: REA capabilities, top-requested Plex features, client landscape; decisions above). Git repo initialized with repo-local identity; docs/memory.md created.
+- **2026-10-18** — M0 scaffold: Gradle 9.8.1 wrapper, version catalog (AGP 9.4.1 / Kotlin 2.4.21 / Compose BOM 2026.09.00 / Media3 1.11.1 / Ktor 3.6.0 — cross-checked against jellyfin-androidtv master and Maven metadata), modules :core:api (pure JVM) / :core:data / :app, AGP 9 built-in Kotlin pattern (kotlin-gradle on buildscript classpath, kotlin.compose plugin in :app), dual LAUNCHER/LEANBACK_LAUNCHER manifest, local.properties → ~/Android/Sdk.
