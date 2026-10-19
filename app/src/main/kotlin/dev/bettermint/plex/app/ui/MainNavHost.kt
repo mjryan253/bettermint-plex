@@ -7,9 +7,12 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.scaleIn
 import androidx.compose.animation.scaleOut
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
+import androidx.compose.ui.graphics.Color
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.systemBarsPadding
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
@@ -107,7 +110,9 @@ fun MainNavHost(
 
     Box(modifier = Modifier.fillMaxSize()) {
         WebOsWallpaper()
-        Column(modifier = Modifier.fillMaxSize()) {
+        // Wallpaper runs edge-to-edge; content stays clear of the phone's
+        // status and navigation bars (no-op on TV, which has no insets).
+        Column(modifier = Modifier.fillMaxSize().systemBarsPadding()) {
             Box(modifier = Modifier.weight(1f)) {
                 MainNavGraph(nav, library, ready, sessionViewModel)
             }
@@ -181,6 +186,8 @@ private fun MainNavGraph(
             if (playback == null) {
                 LoadingScreen()
             } else {
+                // Video letterboxes against black, not the wallpaper.
+                Box(Modifier.fillMaxSize().background(Color.Black))
                 PlayerScreen(
                     library = library,
                     playback = playback,

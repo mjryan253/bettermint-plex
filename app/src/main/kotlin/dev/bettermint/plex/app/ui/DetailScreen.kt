@@ -1,7 +1,10 @@
 package dev.bettermint.plex.app.ui
 
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -56,6 +59,7 @@ private fun formatMs(ms: Long): String {
     return if (hours > 0) "${hours}h ${minutes}m" else "${minutes}m"
 }
 
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun DetailScreen(
     library: LibraryRepository,
@@ -116,10 +120,7 @@ fun DetailScreen(
                 shape = MaterialTheme.shapes.extraLarge,
                 shadowElevation = 12.dp,
             ) {
-                Row(
-                    horizontalArrangement = Arrangement.spacedBy(24.dp),
-                    modifier = Modifier.padding(20.dp),
-                ) {
+                val poster: @Composable () -> Unit = {
                     AsyncImage(
                         model = library.imageUrl(item.posterPath(), POSTER_WIDTH_DP * 2, POSTER_HEIGHT_DP * 2),
                         contentDescription = null,
@@ -129,12 +130,17 @@ fun DetailScreen(
                             .height(POSTER_HEIGHT_DP.dp)
                             .clip(MaterialTheme.shapes.medium),
                     )
+                }
+                val info: @Composable () -> Unit = {
                     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                         Text(item.displayTitle(), style = MaterialTheme.typography.headlineSmall)
                         item.displaySubtitle()?.let {
                             Text(it, style = MaterialTheme.typography.bodyMedium, color = palette.graphite)
                         }
-                        Row(horizontalArrangement = Arrangement.spacedBy(14.dp)) {
+                        FlowRow(
+                            horizontalArrangement = Arrangement.spacedBy(14.dp),
+                            verticalArrangement = Arrangement.spacedBy(4.dp),
+                        ) {
                             val meta = listOfNotNull(
                                 item.contentRating,
                                 item.duration?.let { "${it / 60000} min" },
@@ -155,7 +161,10 @@ fun DetailScreen(
                         }
                         if (item.media.isNotEmpty()) {
                             if (item.media.size > 1) {
-                                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                FlowRow(
+                                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                    verticalArrangement = Arrangement.spacedBy(8.dp),
+                                ) {
                                     item.media.forEachIndexed { index, version ->
                                         LinenChip(
                                             selected = index == versionIndex,
@@ -170,7 +179,10 @@ fun DetailScreen(
                             val audioTracks = streams.filter { it.isAudio }
                             val subtitleTracks = streams.filter { it.isSubtitle }
                             if (audioTracks.size > 1) {
-                                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                FlowRow(
+                                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                    verticalArrangement = Arrangement.spacedBy(8.dp),
+                                ) {
                                     audioTracks.forEach { track ->
                                         LinenChip(
                                             selected = audioId == track.id || (audioId == null && track.selected),
@@ -181,7 +193,10 @@ fun DetailScreen(
                                 }
                             }
                             if (subtitleTracks.isNotEmpty()) {
-                                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                FlowRow(
+                                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                    verticalArrangement = Arrangement.spacedBy(8.dp),
+                                ) {
                                     LinenChip(
                                         selected = subId == null,
                                         onClick = { subId = null },
@@ -196,7 +211,10 @@ fun DetailScreen(
                                     }
                                 }
                             }
-                            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            FlowRow(
+                                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                verticalArrangement = Arrangement.spacedBy(8.dp),
+                            ) {
                                 listOf(null, 8000, 4000, 2000).forEach { kbps ->
                                     LinenChip(
                                         selected = qualityOverride == kbps,
@@ -205,7 +223,10 @@ fun DetailScreen(
                                     )
                                 }
                             }
-                            Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                            FlowRow(
+                                horizontalArrangement = Arrangement.spacedBy(10.dp),
+                                verticalArrangement = Arrangement.spacedBy(8.dp),
+                            ) {
                                 val resumeMs = item.viewOffset ?: 0L
                                 fun play(startMs: Long) = nav.navigate(
                                     Routes.player(
@@ -243,6 +264,27 @@ fun DetailScreen(
                             }
                         }
                         playlistMessage?.let { Text(it, style = MaterialTheme.typography.bodySmall, color = palette.graphite) }
+                    }
+                }
+                // Side-by-side on TV and tablets; stacked when the card is
+                // too narrow for a poster plus a readable text column.
+                BoxWithConstraints {
+                    if (maxWidth < 560.dp) {
+                        Column(
+                            verticalArrangement = Arrangement.spacedBy(16.dp),
+                            modifier = Modifier.padding(20.dp),
+                        ) {
+                            poster()
+                            info()
+                        }
+                    } else {
+                        Row(
+                            horizontalArrangement = Arrangement.spacedBy(24.dp),
+                            modifier = Modifier.padding(20.dp),
+                        ) {
+                            poster()
+                            info()
+                        }
                     }
                 }
             }
