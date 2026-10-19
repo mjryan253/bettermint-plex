@@ -181,10 +181,14 @@ fun DetailScreen(
                                 ),
                             )
                             if (resumeMs > 0) {
-                                Button(onClick = { play(resumeMs) }) { Text("Resume ${formatMs(resumeMs)}") }
+                                Button(onClick = { play(resumeMs) }, modifier = Modifier.initialFocus(item.ratingKey)) {
+                                    Text("Resume ${formatMs(resumeMs)}")
+                                }
                                 OutlinedButton(onClick = { play(0) }) { Text("Start over") }
                             } else {
-                                Button(onClick = { play(0) }) { Text("Play") }
+                                Button(onClick = { play(0) }, modifier = Modifier.initialFocus(item.ratingKey)) {
+                                    Text("Play")
+                                }
                             }
                         }
                     }

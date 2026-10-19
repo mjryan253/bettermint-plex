@@ -58,10 +58,11 @@ fun HomeScreen(
 
         item {
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                ready.libraries.filter { it.type == "movie" || it.type == "show" }.forEach { section ->
+                ready.libraries.filter { it.type == "movie" || it.type == "show" }.forEachIndexed { index, section ->
                     AssistChip(
                         onClick = { nav.navigate(Routes.library(section.key, section.title)) },
                         label = { Text(section.title) },
+                        modifier = if (index == 0) Modifier.initialFocus() else Modifier,
                     )
                 }
                 AssistChip(onClick = { nav.navigate(Routes.SEARCH) }, label = { Text("Search") })

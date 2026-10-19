@@ -62,6 +62,7 @@ fun LibraryGridScreen(
                         item = item,
                         library = library,
                         onClick = { nav.navigate(Routes.details(item.ratingKey.orEmpty())) },
+                        modifier = if (index == 0) Modifier.initialFocus() else Modifier,
                     )
                 }
             }

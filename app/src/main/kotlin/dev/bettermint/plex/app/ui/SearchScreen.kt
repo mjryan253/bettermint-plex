@@ -56,7 +56,7 @@ fun SearchScreen(library: LibraryRepository, nav: NavHostController) {
             },
             label = { Text("Search your libraries") },
             singleLine = true,
-            modifier = Modifier.fillMaxWidth(),
+            modifier = Modifier.fillMaxWidth().initialFocus(),
         )
         Spacer(Modifier.height(16.dp))
         if (searching) Text("Searching...")

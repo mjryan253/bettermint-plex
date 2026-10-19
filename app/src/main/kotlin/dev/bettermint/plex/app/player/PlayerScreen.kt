@@ -41,6 +41,7 @@ import dev.bettermint.plex.api.model.Metadata
 import dev.bettermint.plex.app.ui.LoadingScreen
 import dev.bettermint.plex.app.ui.displaySubtitle
 import dev.bettermint.plex.app.ui.displayTitle
+import dev.bettermint.plex.app.ui.initialFocus
 import dev.bettermint.plex.app.ui.posterPath
 import dev.bettermint.plex.data.LibraryRepository
 import dev.bettermint.plex.data.PlaybackRepository
@@ -244,7 +245,9 @@ fun PlayerScreen(
             modifier = Modifier.fillMaxSize().padding(48.dp),
             contentAlignment = Alignment.BottomEnd,
         ) {
-            Button(onClick = { player.seekTo(target) }) { Text("Skip Intro") }
+            Button(onClick = { player.seekTo(target) }, modifier = Modifier.initialFocus(target)) {
+                Text("Skip Intro")
+            }
         }
     }
 
@@ -304,7 +307,7 @@ private fun NextUpOverlay(
         }
         Spacer(Modifier.height(24.dp))
         Row(horizontalArrangement = Arrangement.spacedBy(12.dp), modifier = Modifier.wrapContentSize()) {
-            Button(onClick = onPlayNow) { Text("Play now") }
+            Button(onClick = onPlayNow, modifier = Modifier.initialFocus(next.ratingKey)) { Text("Play now") }
             OutlinedButton(onClick = onCancel) { Text("Cancel") }
         }
     }

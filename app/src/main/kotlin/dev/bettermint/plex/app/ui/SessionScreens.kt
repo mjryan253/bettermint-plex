@@ -8,7 +8,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CircularProgressIndicator
@@ -81,8 +81,12 @@ fun ServerPickerScreen(state: SessionState.PickServer, onSelect: (PlexResource) 
             Text("No servers found on this account.")
         }
         LazyColumn(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            items(state.servers, key = { it.clientIdentifier }) { server ->
-                Card(onClick = { onSelect(server) }, modifier = Modifier.fillMaxWidth()) {
+            itemsIndexed(state.servers, key = { _, s -> s.clientIdentifier }) { index, server ->
+                Card(
+                    onClick = { onSelect(server) },
+                    modifier = Modifier.fillMaxWidth()
+                        .then(if (index == 0) Modifier.initialFocus(state.servers.size) else Modifier),
+                ) {
                     ListItem(
                         headlineContent = { Text(server.name) },
                         supportingContent = {
