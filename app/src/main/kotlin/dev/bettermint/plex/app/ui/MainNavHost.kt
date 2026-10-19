@@ -132,7 +132,10 @@ fun MainNavHost(
                         nav.navigate(target) {
                             popUpTo(Routes.HOME) { saveState = true }
                             launchSingleTop = true
-                            restoreState = true
+                            // Library sections share one destination, so restoring
+                            // saved state would bring back the previously visited
+                            // section's arguments (TV tab landing on Movies).
+                            restoreState = !tab.id.startsWith("lib/")
                         }
                     },
                 )
