@@ -17,3 +17,4 @@ captures/
 # Misc
 *.log
 .DS_Store
+.kotlin/
